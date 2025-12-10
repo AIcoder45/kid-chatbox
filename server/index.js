@@ -16,13 +16,14 @@ const { initializeDatabase } = require('./config/database');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // CORS configuration - allow production domain
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'http://localhost:3001',
   'http://localhost:5174',
 ];
 
