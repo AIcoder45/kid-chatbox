@@ -17,7 +17,8 @@
     "logs:pm2": "pm2 logs kidchatbox-api",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css}\"",
-    "db:setup": "node server/scripts/setup-db.js"
+    "db:setup": "node server/scripts/setup-db.js",
+    "db:test": "node test-db-connection.js"
   },
   "dependencies": {
     "@chakra-ui/react": "^2.8.2",

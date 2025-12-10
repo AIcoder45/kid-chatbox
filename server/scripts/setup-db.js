@@ -9,14 +9,15 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const adminPool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
+  host: process.env.DATABASE_HOST || process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DATABASE_PORT || process.env.DB_PORT || '5432', 10),
   database: 'postgres', // Connect to default postgres database
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
+  user: process.env.DATABASE_USERNAME || process.env.DB_USER || 'postgres',
+  password: process.env.DATABASE_PASSWORD || process.env.DB_PASSWORD || 'postgres',
+  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
 });
 
-const dbName = process.env.DB_NAME || 'kidchatbox';
+const dbName = process.env.DATABASE_NAME || process.env.DB_NAME || 'kidchatbox';
 
 async function setupDatabase() {
   try {
@@ -52,7 +53,7 @@ async function setupDatabase() {
     if (error.code === '42P04') {
       console.log('ℹ️  Database already exists, continuing...');
     } else if (error.code === '28P01') {
-      console.error('❌ Authentication failed. Please check your DB_USER and DB_PASSWORD in .env');
+      console.error('❌ Authentication failed. Please check your DATABASE_USERNAME and DATABASE_PASSWORD in .env');
     } else if (error.code === 'ECONNREFUSED') {
       console.error('❌ Cannot connect to PostgreSQL. Please ensure PostgreSQL is running.');
       console.error('   Windows: Check Services or start PostgreSQL from Start Menu');
