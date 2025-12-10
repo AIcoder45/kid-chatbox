@@ -218,7 +218,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onSwitchToRegister
           const isSkippedMoment = notification.isSkippedMoment;
           const isDismissedMoment = notification.isDismissedMoment;
           
-          let errorMsg = LOGIN_CONSTANTS.GOOGLE_CANCELLED;
+          let errorMsg: string = LOGIN_CONSTANTS.GOOGLE_CANCELLED;
           
           if (isNotDisplayed || isSkippedMoment || status === 'skipped_moment') {
             errorMsg = 'Google Sign-In popup was blocked or not available. Please check your browser settings or ensure your email is added as a test user in Google Cloud Console.';
