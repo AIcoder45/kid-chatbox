@@ -3,8 +3,8 @@
  */
 
 export const APP_CONSTANTS = {
-  APP_NAME: 'KidChatbox',
-  BRAND_NAME: 'KidChatbox',
+  APP_NAME: 'Guru AI',
+  BRAND_NAME: 'Guru AI',
   MIN_AGE: 6,
   MAX_AGE: 14,
   DEFAULT_QUIZ_QUESTIONS: 15,

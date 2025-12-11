@@ -74,8 +74,12 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Health check
+// Health check endpoints
 app.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'KidChatbox API is running' });
+});
+
+app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'KidChatbox API is running' });
 });
 
