@@ -23,6 +23,7 @@ import {
   Divider,
 } from '@/shared/design-system';
 import { scheduledTestsApi } from '@/services/api';
+import { PullToRefresh } from './PullToRefresh';
 
 interface ScheduledTest {
   id: string;
@@ -71,6 +72,10 @@ export const ScheduledTests: React.FC<ScheduledTestsProps> = ({ maxDisplay, show
   useEffect(() => {
     loadScheduledTests();
   }, []);
+
+  const handleRefresh = async () => {
+    await loadScheduledTests();
+  };
 
   const loadScheduledTests = async (): Promise<void> => {
     try {
@@ -198,18 +203,22 @@ export const ScheduledTests: React.FC<ScheduledTestsProps> = ({ maxDisplay, show
 
   if (loading) {
     return (
-      <Box textAlign="center" py={10}>
-        <Spinner size="xl" />
-      </Box>
+      <PullToRefresh onRefresh={handleRefresh}>
+        <Box textAlign="center" py={10}>
+          <Spinner size="xl" />
+        </Box>
+      </PullToRefresh>
     );
   }
 
   if (error) {
     return (
-      <Alert status="error">
-        <AlertIcon />
-        {error}
-      </Alert>
+      <PullToRefresh onRefresh={handleRefresh}>
+        <Alert status="error">
+          <AlertIcon />
+          {error}
+        </Alert>
+      </PullToRefresh>
     );
   }
 
@@ -220,6 +229,7 @@ export const ScheduledTests: React.FC<ScheduledTestsProps> = ({ maxDisplay, show
   const hasMore = maxDisplay && (upcomingTests.length > maxDisplay || liveTests.length > maxDisplay || completedTests.length > maxDisplay);
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <Box>
       <VStack spacing={8} align="stretch">
         {/* Upcoming Tests Section */}
@@ -330,6 +340,7 @@ export const ScheduledTests: React.FC<ScheduledTestsProps> = ({ maxDisplay, show
         )}
       </VStack>
     </Box>
+    </PullToRefresh>
   );
 };
 

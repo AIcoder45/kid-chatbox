@@ -26,6 +26,7 @@ import { LANGUAGES } from '@/constants/quiz';
 import { QUIZ_CONSTANTS } from '@/constants/quiz';
 import { Language } from '@/types/quiz';
 import { profileApi } from '@/services/api';
+import { PullToRefresh } from './PullToRefresh';
 
 interface ProfileProps {
   user: User;
@@ -111,18 +112,30 @@ export const Profile: React.FC<ProfileProps> = ({ user: initialUser }) => {
     }
   };
 
+  const handleRefresh = async () => {
+    const { user: latestUser } = await profileApi.getProfile();
+    setUser(latestUser);
+    setName(latestUser.name || '');
+    setAge(latestUser.age?.toString() || '');
+    setGrade(latestUser.grade || '');
+    setPreferredLanguage((latestUser.preferredLanguage as Language) || 'English');
+  };
+
   if (loadingProfile) {
     return (
-      <Box padding={6} display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <VStack spacing={4}>
-          <Spinner size="xl" color="blue.500" />
-          <Text fontSize="lg">Loading profile...</Text>
-        </VStack>
-      </Box>
+      <PullToRefresh onRefresh={handleRefresh}>
+        <Box padding={6} display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <VStack spacing={4}>
+            <Spinner size="xl" color="blue.500" />
+            <Text fontSize="lg">Loading profile...</Text>
+          </VStack>
+        </Box>
+      </PullToRefresh>
     );
   }
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <Box padding={{ base: 4, md: 6 }} maxWidth="600px" margin="0 auto">
       <VStack spacing={{ base: 4, md: 6 }} align="stretch">
         <Heading size={{ base: 'md', md: 'lg' }} color="blue.600">
@@ -256,5 +269,6 @@ export const Profile: React.FC<ProfileProps> = ({ user: initialUser }) => {
         </Card>
       </VStack>
     </Box>
+    </PullToRefresh>
   );
 };

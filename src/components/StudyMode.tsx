@@ -67,7 +67,7 @@ export const StudyMode: React.FC = () => {
       } catch (authError) {
         // If both fail, fall back to localStorage
         console.warn('Failed to fetch fresh user data, using cached data:', error);
-        const { user } = authApi.getCurrentUser();
+    const { user } = authApi.getCurrentUser();
         userProfile = user as User | null;
       }
     }

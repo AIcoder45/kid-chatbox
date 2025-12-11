@@ -35,7 +35,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         >
           <Heading
             size="4xl"
-            bgGradient="linear(to-r, purple.400, pink.400, blue.400)"
+            bgGradient="linear(to-r, purple.600, pink.600, blue.600)"
             bgClip="text"
             fontWeight="extrabold"
             letterSpacing="tight"

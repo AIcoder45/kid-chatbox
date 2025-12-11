@@ -30,6 +30,7 @@ import {
 } from '@/shared/design-system';
 import { motion } from 'framer-motion';
 import { studyApi } from '@/services/api';
+import { PullToRefresh } from './PullToRefresh';
 
 interface StudySession {
   id: string;
@@ -129,6 +130,10 @@ export const StudyLibrary: React.FC = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    await loadStudyLibrary();
+  };
+
   const handleViewStudy = (sessionId: string) => {
     navigate(`/study-library/${sessionId}`);
   };
@@ -161,7 +166,8 @@ export const StudyLibrary: React.FC = () => {
   }
 
   return (
-    <Box p={6}>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <Box p={6}>
       <VStack spacing={6} align="stretch">
         <Heading size="lg" color="blue.600">
           📚 Study Library
@@ -404,6 +410,7 @@ export const StudyLibrary: React.FC = () => {
         )}
       </VStack>
     </Box>
+    </PullToRefresh>
   );
 };
 

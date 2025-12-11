@@ -76,7 +76,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             </Heading>
 
             <Text fontSize="xl" fontWeight="bold">
-              {MESSAGES.SCORE_MESSAGE} {score} {MESSAGES.OUT_OF}
+              {MESSAGES.SCORE_MESSAGE} {score} out of {totalQuestions} questions correctly.
             </Text>
 
             <Text fontSize="md" color="gray.600">

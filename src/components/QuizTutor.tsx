@@ -13,16 +13,24 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
 } from '@/shared/design-system';
 import { AllQuestionsView } from './AllQuestionsView';
 import { Timer } from './Timer';
 import { ResultsView } from './ResultsView';
 import { ConfigurationForm } from './ConfigurationForm';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useBlocker } from 'react-router-dom';
 import { generateQuizQuestions, generateImprovementTips } from '@/services/openai';
 import { quizApi, authApi, scheduledTestsApi, profileApi } from '@/services/api';
 import { QuizConfig, AnswerResult, Question } from '@/types/quiz';
-import { QUIZ_CONSTANTS, SUBJECTS } from '@/constants/quiz';
+import { QUIZ_CONSTANTS, SUBJECTS, MESSAGES } from '@/constants/quiz';
 import { isValidAnswer } from '@/utils/validation';
 import { User } from '@/types';
 
@@ -54,6 +62,9 @@ export const QuizTutor: React.FC = () => {
   const hasLoadedScheduledTestRef = useRef(false);
   const beepPlayedRef = useRef(false);
   const totalTimeRef = useRef<number>(0);
+  const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
+  const pendingNavigationRef = useRef<(() => void) | null>(null);
+  const isSubmittingRef = useRef(false);
 
   const handleConfigComplete = useCallback(async (quizConfig: {
     subject: string;
@@ -124,12 +135,67 @@ export const QuizTutor: React.FC = () => {
     }
   }, []);
 
-  // Prevent page refresh during quiz
+  /**
+   * Block React Router navigation during quiz
+   */
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      phase === 'quiz' && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  /**
+   * Handle navigation blocker - show confirmation modal
+   */
+  useEffect(() => {
+    if (blocker.state === 'blocked' && phase === 'quiz') {
+      // Store the navigation function to execute after confirmation
+      pendingNavigationRef.current = () => {
+        blocker.proceed();
+      };
+      onConfirmOpen();
+    }
+  }, [blocker, phase, onConfirmOpen]);
+
+  /**
+   * Handle confirmation to submit quiz and navigate
+   */
+  const handleConfirmLeave = useCallback(async () => {
+    if (phase !== 'quiz' || isSubmittingRef.current) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    onConfirmClose();
+
+    // Submit quiz before navigating
+    await handleSubmitQuiz();
+
+    // Execute pending navigation if exists
+    if (pendingNavigationRef.current) {
+      pendingNavigationRef.current();
+      pendingNavigationRef.current = null;
+    }
+  }, [phase, onConfirmClose, handleSubmitQuiz]);
+
+  /**
+   * Handle cancel - stay on quiz page
+   */
+  const handleCancelLeave = useCallback(() => {
+    onConfirmClose();
+    if (blocker.state === 'blocked') {
+      blocker.reset();
+    }
+    pendingNavigationRef.current = null;
+  }, [onConfirmClose, blocker]);
+
+  /**
+   * Prevent page refresh/back button during quiz
+   */
   useEffect(() => {
     if (phase === 'quiz') {
       const handleBeforeUnload = (e: BeforeUnloadEvent) => {
         e.preventDefault();
-        e.returnValue = 'You have an active quiz in progress. Are you sure you want to leave? Your progress may be lost.';
+        e.returnValue = MESSAGES.QUIZ_REFRESH_WARNING;
         return e.returnValue;
       };
 
@@ -140,6 +206,43 @@ export const QuizTutor: React.FC = () => {
       };
     }
   }, [phase]);
+
+  /**
+   * Intercept link clicks during quiz
+   */
+  useEffect(() => {
+    if (phase !== 'quiz') {
+      return;
+    }
+
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a[href]') as HTMLAnchorElement;
+
+      if (link && link.href) {
+        const currentOrigin = window.location.origin;
+        const linkUrl = new URL(link.href, window.location.href);
+
+        // Only intercept internal navigation
+        if (linkUrl.origin === currentOrigin && linkUrl.pathname !== location.pathname) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Store navigation function
+          pendingNavigationRef.current = () => {
+            navigate(linkUrl.pathname + linkUrl.search);
+          };
+          onConfirmOpen();
+        }
+      }
+    };
+
+    document.addEventListener('click', handleLinkClick, true);
+
+    return () => {
+      document.removeEventListener('click', handleLinkClick, true);
+    };
+  }, [phase, location.pathname, navigate, onConfirmOpen]);
 
   /**
    * Play beep sound
@@ -230,9 +333,11 @@ export const QuizTutor: React.FC = () => {
   );
 
   const handleSubmitQuiz = useCallback(async () => {
-    if (phase !== 'quiz' || questions.length === 0) {
+    if (phase !== 'quiz' || questions.length === 0 || isSubmittingRef.current) {
       return;
     }
+
+    isSubmittingRef.current = true;
 
     // Clear timer
     if (timerIntervalRef.current) {
@@ -337,6 +442,11 @@ export const QuizTutor: React.FC = () => {
       // Continue to results even if tips generation fails
       console.error('Failed to generate improvement tips:', err);
       setPhase('results');
+    } finally {
+      // Reset submitting flag after a delay to allow navigation
+      setTimeout(() => {
+        isSubmittingRef.current = false;
+      }, 1000);
     }
   }, [phase, questions, answers, config, quizStartTime, scheduledTestId]);
 
@@ -560,101 +670,247 @@ export const QuizTutor: React.FC = () => {
 
   if (phase === 'config') {
     return (
-      <Box padding={{ base: 4, md: 6 }}>
-        <ConfigurationForm onConfigComplete={handleConfigComplete} />
-        {error && (
-          <Alert status="error" marginTop={4} maxWidth="600px" marginX="auto">
-            <AlertIcon />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-      </Box>
+      <>
+        <Box padding={{ base: 4, md: 6 }}>
+          <ConfigurationForm onConfigComplete={handleConfigComplete} />
+          {error && (
+            <Alert status="error" marginTop={4} maxWidth="600px" marginX="auto">
+              <AlertIcon />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </Box>
+        {/* Confirmation Modal for Navigation */}
+        <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
+          <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+          <ModalContent>
+            <ModalHeader>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_TITLE}</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Text>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_MESSAGE}</Text>
+              {config && (
+                <Alert status="info" marginTop={4}>
+                  <AlertIcon />
+                  <AlertDescription>
+                    You have answered {answers.size} out of {config.questionCount} questions.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={handleCancelLeave}>
+                Cancel
+              </Button>
+              <Button colorScheme="blue" onClick={handleConfirmLeave}>
+                Submit & Leave
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
     );
   }
 
   if (phase === 'loading') {
     return (
-      <Box
-        padding={{ base: 4, md: 6 }}
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <VStack spacing={4}>
-          <Spinner size="xl" color="blue.500" />
-          <Text fontSize={{ base: 'md', md: 'lg' }}>
-            {scheduledTestId
-              ? 'Loading your scheduled test...'
-              : config
-                ? 'Generating your quiz questions...'
-                : 'Loading results...'}
-          </Text>
-        </VStack>
-      </Box>
+      <>
+        <Box
+          padding={{ base: 4, md: 6 }}
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="400px"
+        >
+          <VStack spacing={4}>
+            <Spinner size="xl" color="blue.500" />
+            <Text fontSize={{ base: 'md', md: 'lg' }}>
+              {scheduledTestId
+                ? 'Loading your scheduled test...'
+                : config
+                  ? 'Generating your quiz questions...'
+                  : 'Loading results...'}
+            </Text>
+          </VStack>
+        </Box>
+        {/* Confirmation Modal for Navigation */}
+        <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
+          <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+          <ModalContent>
+            <ModalHeader>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_TITLE}</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Text>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_MESSAGE}</Text>
+              {config && (
+                <Alert status="info" marginTop={4}>
+                  <AlertIcon />
+                  <AlertDescription>
+                    You have answered {answers.size} out of {config.questionCount} questions.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={handleCancelLeave}>
+                Cancel
+              </Button>
+              <Button colorScheme="blue" onClick={handleConfirmLeave}>
+                Submit & Leave
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
     );
   }
 
   if (phase === 'quiz' && questions.length > 0) {
     return (
-      <Box padding={{ base: 4, md: 6 }}>
-        <VStack spacing={{ base: 4, md: 6 }}>
-          {config && (
-            <>
-              <Timer
-                timeRemaining={timeRemaining}
-                totalTime={totalTimeRef.current || (config.questionCount * QUIZ_CONSTANTS.TIME_PER_QUESTION_SECONDS)}
-              />
+      <>
+        <Box padding={{ base: 4, md: 6 }}>
+          <VStack spacing={{ base: 4, md: 6 }}>
+            {config && (
+              <>
+                <Timer
+                  timeRemaining={timeRemaining}
+                  totalTime={totalTimeRef.current || (config.questionCount * QUIZ_CONSTANTS.TIME_PER_QUESTION_SECONDS)}
+                />
 
-              <Box width="100%" maxWidth="1000px" marginX="auto">
-                <Text fontSize={{ base: 'sm', md: 'md' }} color="gray.600" textAlign="center">
-                  Answered: {answeredCount} of {config.questionCount} questions
-                </Text>
-              </Box>
-            </>
-          )}
+                <Box width="100%" maxWidth="1000px" marginX="auto">
+                  <Text fontSize={{ base: 'sm', md: 'md' }} color="gray.600" textAlign="center">
+                    Answered: {answeredCount} of {config.questionCount} questions
+                  </Text>
+                </Box>
+              </>
+            )}
 
-          <AllQuestionsView
-            questions={questions}
-            answers={answers}
-            onAnswerSelect={handleAnswerSelect}
-          />
+            <AllQuestionsView
+              questions={questions}
+              answers={answers}
+              onAnswerSelect={handleAnswerSelect}
+            />
 
-          <Box width="100%" maxWidth="1000px" marginX="auto">
-            <Button
-              colorScheme="green"
-              size={{ base: 'md', md: 'lg' }}
-              onClick={handleSubmitQuiz}
-              width="100%"
-              isDisabled={answeredCount === 0}
-            >
-              Submit Quiz ({answeredCount}/{config?.questionCount || 0} answered)
-            </Button>
-          </Box>
-        </VStack>
-      </Box>
+            <Box width="100%" maxWidth="1000px" marginX="auto">
+              <Button
+                colorScheme="green"
+                size={{ base: 'md', md: 'lg' }}
+                onClick={handleSubmitQuiz}
+                width="100%"
+                isDisabled={answeredCount === 0}
+              >
+                Submit Quiz ({answeredCount}/{config?.questionCount || 0} answered)
+              </Button>
+            </Box>
+          </VStack>
+        </Box>
+        {/* Confirmation Modal for Navigation */}
+        <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
+          <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+          <ModalContent>
+            <ModalHeader>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_TITLE}</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Text>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_MESSAGE}</Text>
+              {config && (
+                <Alert status="info" marginTop={4}>
+                  <AlertIcon />
+                  <AlertDescription>
+                    You have answered {answers.size} out of {config.questionCount} questions.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={handleCancelLeave}>
+                Cancel
+              </Button>
+              <Button colorScheme="blue" onClick={handleConfirmLeave}>
+                Submit & Leave
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
     );
   }
 
   if (phase === 'results' && config && allAnswerResults.length > 0) {
     return (
-      <Box padding={{ base: 4, md: 6 }}>
-        <ResultsView
-          score={score}
-          totalQuestions={config.questionCount}
-          allAnswerResults={allAnswerResults}
-          config={config}
-          improvementTips={improvementTips}
-          resultSaved={resultSaved}
-          timeTaken={Math.floor((Date.now() - quizStartTime) / 1000)}
-          onStartNewQuiz={handleStartNewQuiz}
-          onRetrySameTopic={handleRetrySameTopic}
-          onBackToDashboard={handleBackToDashboard}
-        />
-      </Box>
+      <>
+        <Box padding={{ base: 4, md: 6 }}>
+          <ResultsView
+            score={score}
+            totalQuestions={config.questionCount}
+            allAnswerResults={allAnswerResults}
+            config={config}
+            improvementTips={improvementTips}
+            resultSaved={resultSaved}
+            timeTaken={Math.floor((Date.now() - quizStartTime) / 1000)}
+            onStartNewQuiz={handleStartNewQuiz}
+            onRetrySameTopic={handleRetrySameTopic}
+            onBackToDashboard={handleBackToDashboard}
+          />
+        </Box>
+        {/* Confirmation Modal for Navigation */}
+        <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
+          <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+          <ModalContent>
+            <ModalHeader>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_TITLE}</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Text>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_MESSAGE}</Text>
+              {config && (
+                <Alert status="info" marginTop={4}>
+                  <AlertIcon />
+                  <AlertDescription>
+                    You have answered {answers.size} out of {config.questionCount} questions.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={handleCancelLeave}>
+                Cancel
+              </Button>
+              <Button colorScheme="blue" onClick={handleConfirmLeave}>
+                Submit & Leave
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
     );
   }
 
-  return null;
+  return (
+    <>
+      {/* Confirmation Modal for Navigation */}
+      <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
+        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+        <ModalContent>
+          <ModalHeader>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_TITLE}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_MESSAGE}</Text>
+            {config && (
+              <Alert status="info" marginTop={4}>
+                <AlertIcon />
+                <AlertDescription>
+                  You have answered {answers.size} out of {config.questionCount} questions.
+                </AlertDescription>
+              </Alert>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={handleCancelLeave}>
+              Cancel
+            </Button>
+            <Button colorScheme="blue" onClick={handleConfirmLeave}>
+              Submit & Leave
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
+  );
 };

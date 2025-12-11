@@ -346,5 +346,10 @@ export const MESSAGES = {
   OUT_OF: 'out of 5 questions correctly.',
   MOTIVATIONAL: 'Good job! Practice thoda aur karenge to aur better hoga.',
   ANOTHER_QUIZ: 'Do you want to try another quiz on the same topic or a different topic?',
+  QUIZ_LEAVE_CONFIRMATION_TITLE: 'Submit Quiz and Leave?',
+  QUIZ_LEAVE_CONFIRMATION_MESSAGE:
+    'You have an active quiz in progress. If you leave now, your quiz will be automatically submitted with your current answers. Are you sure you want to continue?',
+  QUIZ_REFRESH_WARNING:
+    'You have an active quiz in progress. Refreshing the page will submit your quiz with current answers. Are you sure you want to refresh?',
 } as const;
 

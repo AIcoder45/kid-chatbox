@@ -21,6 +21,7 @@ import {
 } from '@/shared/design-system';
 import { motion } from 'framer-motion';
 import { adminApi, AnalyticsSummary } from '@/services/admin';
+import { PullToRefresh } from '../PullToRefresh';
 
 const MotionCard = motion(Card);
 
@@ -47,6 +48,10 @@ export const AdminDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    await loadSummary();
   };
 
   if (loading) {
@@ -112,7 +117,8 @@ export const AdminDashboard: React.FC = () => {
   ];
 
   return (
-    <Box p={{ base: 4, md: 6 }}>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <Box p={{ base: 4, md: 6 }}>
       <VStack spacing={{ base: 4, md: 6 }} align="stretch">
         <Heading size={{ base: 'md', md: 'lg' }} color="gray.700">
           Admin Dashboard
@@ -166,6 +172,7 @@ export const AdminDashboard: React.FC = () => {
         )}
       </VStack>
     </Box>
+    </PullToRefresh>
   );
 };
 

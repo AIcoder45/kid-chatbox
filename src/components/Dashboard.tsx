@@ -22,6 +22,7 @@ import { AnalyticsData, User } from '@/types';
 import { MESSAGES } from '@/constants/app';
 import { UpcomingTestsSidebar } from './UpcomingTestsSidebar';
 import { StudentUpcomingTestsMarquee } from '@/components/layout/StudentUpcomingTestsMarquee';
+import { PullToRefresh } from './PullToRefresh';
 
 interface DashboardProps {
   user: User;
@@ -122,8 +123,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
   const userName = user.name || 'Friend';
 
+  const handleRefresh = async () => {
+    await Promise.all([loadAnalytics(), loadPlanInfo()]);
+  };
+
   return (
-    <Box padding={{ base: 4, md: 6 }} maxWidth="1400px" margin="0 auto">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <Box padding={{ base: 4, md: 6 }} maxWidth="1400px" margin="0 auto">
       <VStack spacing={{ base: 3, md: 4 }} align="stretch">
         {/* Header */}
         <VStack align="start" spacing={1}>
@@ -507,6 +513,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         </HStack>
       </VStack>
     </Box>
+    </PullToRefresh>
   );
 };
 

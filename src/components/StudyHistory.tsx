@@ -31,6 +31,7 @@ import { studyApi, authApi } from '@/services/api';
 import { StudyHistoryItem } from '@/types';
 import { MESSAGES } from '@/constants/app';
 import { useNavigate } from 'react-router-dom';
+import { PullToRefresh } from './PullToRefresh';
 
 /**
  * Formats timestamp to readable date string
@@ -86,57 +87,68 @@ export const StudyHistory = () => {
     loadHistory();
   }, [loadHistory]);
 
+  const handleRefresh = async () => {
+    await loadHistory();
+  };
+
   if (loading) {
     return (
-      <Box padding={6} display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <VStack spacing={4}>
-          <Spinner size="xl" color="blue.500" />
-          <Text fontSize="lg">Loading your study history...</Text>
-        </VStack>
-      </Box>
+      <PullToRefresh onRefresh={handleRefresh}>
+        <Box padding={6} display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <VStack spacing={4}>
+            <Spinner size="xl" color="blue.500" />
+            <Text fontSize="lg">Loading your study history...</Text>
+          </VStack>
+        </Box>
+      </PullToRefresh>
     );
   }
 
   if (error) {
     return (
-      <Box padding={6} maxWidth="900px" margin="0 auto">
-        <Alert status="error" borderRadius="md">
-          <AlertIcon />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-        <Button marginTop={4} colorScheme="blue" onClick={loadHistory}>
-          Retry
-        </Button>
-      </Box>
+      <PullToRefresh onRefresh={handleRefresh}>
+        <Box padding={6} maxWidth="900px" margin="0 auto">
+          <Alert status="error" borderRadius="md">
+            <AlertIcon />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <Button marginTop={4} colorScheme="blue" onClick={loadHistory}>
+            Retry
+          </Button>
+        </Box>
+      </PullToRefresh>
     );
   }
 
   if (history.length === 0) {
     return (
-      <Box padding={6} maxWidth="900px" margin="0 auto">
-        <VStack spacing={6}>
-          <Heading size="lg" color="blue.600">
-            Study History 📚
-          </Heading>
-          <Card width="100%">
-            <CardBody>
-              <VStack spacing={4}>
-                <Text fontSize="xl">📚</Text>
-                <Text fontSize="lg" color="gray.600">
-                  No study history yet. Start studying to see your topics here!
-                </Text>
-                <Button colorScheme="blue" onClick={() => navigate('/study')}>
-                  Start Studying
-                </Button>
-              </VStack>
-            </CardBody>
-          </Card>
-        </VStack>
-      </Box>
+      <PullToRefresh onRefresh={handleRefresh}>
+        <Box padding={6} maxWidth="900px" margin="0 auto">
+          <VStack spacing={6}>
+            <Heading size="lg" color="blue.600">
+              Study History 📚
+            </Heading>
+            <Card width="100%">
+              <CardBody>
+                <VStack spacing={4}>
+                  <Text fontSize="xl">📚</Text>
+                  <Text fontSize="lg" color="gray.600">
+                    No study history yet. Start studying to see your topics here!
+                  </Text>
+                  <Button colorScheme="blue" onClick={() => navigate('/study')}>
+                    Start Studying
+                  </Button>
+                </VStack>
+              </CardBody>
+            </Card>
+          </VStack>
+        </Box>
+      </PullToRefresh>
     );
   }
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <Box padding={6} maxWidth="1200px" margin="0 auto">
       <VStack spacing={6} align="stretch">
         <HStack justifyContent="space-between" alignItems="center">
@@ -299,6 +311,7 @@ export const StudyHistory = () => {
         </Accordion>
       </VStack>
     </Box>
+    </PullToRefresh>
   );
 };
 
