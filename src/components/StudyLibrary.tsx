@@ -36,13 +36,20 @@ interface StudySession {
   topic: string;
   lesson_title: string;
   subject: string;
-  difficulty: string;
-  age: number;
+  difficulty?: string;
+  age?: number;
   language: string;
   lesson_summary: string;
   created_by_name: string;
   view_count: number;
   timestamp: string;
+  // Admin content properties
+  content_source?: 'admin_content';
+  contentType?: 'ppt' | 'pdf' | 'text';
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  textContent?: string;
 }
 
 /**
