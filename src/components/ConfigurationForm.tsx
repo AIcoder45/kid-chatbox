@@ -27,13 +27,11 @@ import {
   FormLabel,
   FormHelperText,
   Badge,
-  Flex,
   Divider,
 } from '@/shared/design-system';
 import {
   SUBJECTS,
   DIFFICULTY_LEVELS,
-  LANGUAGES,
   HINDI_SUBTOPICS,
   ENGLISH_SUBTOPICS,
   MATHS_SUBTOPICS,
@@ -665,7 +663,7 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
               <Text fontSize="sm" color="gray.600" marginBottom={3}>
                 {subject && subject !== SUBJECTS.OTHER && selectedSubtopics.length === 0
                   ? 'No subtopics selected. Enter a subtopic here, or provide specific instructions for question generation.'
-                  : 'Provide specific instructions for question generation. Use the suggestions below as guidance.'}
+                  : 'Provide specific instructions for question generation. Examples: MCQ, lengthy questions, tricky questions, scenario-based, fill in the blanks, true/false, and more. Use the suggestions below as guidance.'}
               </Text>
               <motion.div
                 whileHover={{ scale: 1.01 }}
@@ -674,7 +672,7 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
                 <Textarea
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
-                  placeholder="e.g., Focus on practical examples, include real-world scenarios, emphasize problem-solving..."
+                  placeholder="e.g., Generate MCQ questions, create lengthy questions, include tricky questions, add scenario-based questions, fill in the blanks, true/false questions, problem-solving questions, application-based questions, and more..."
                   size="md"
                   rows={5}
                   borderRadius="xl"

@@ -16,7 +16,6 @@ import {
   HStack,
   Button,
   Spinner,
-  SimpleGrid,
 } from '@/shared/design-system';
 import { quizLibraryApi } from '@/services/api';
 import { Question } from '@/types/quiz';
