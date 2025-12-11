@@ -27,6 +27,7 @@ import { QUIZ_CONSTANTS } from '@/constants/quiz';
 import { Language } from '@/types/quiz';
 import { profileApi } from '@/services/api';
 import { PullToRefresh } from './PullToRefresh';
+import { GRADES } from '@/constants/auth';
 
 interface ProfileProps {
   user: User;
@@ -205,13 +206,18 @@ export const Profile: React.FC<ProfileProps> = ({ user: initialUser }) => {
 
                 <FormControl>
                   <FormLabel>Grade/Class</FormLabel>
-                  <Input
-                    type="text"
-                    value={grade}
-                    onChange={(e) => setGrade(e.target.value)}
-                    placeholder="e.g., Class 3, Grade 5"
+                  <Select
+                    value={grade || ''}
+                    onChange={(e) => setGrade(e.target.value || '')}
+                    placeholder="Select your grade/class"
                     size="lg"
-                  />
+                  >
+                    {GRADES.map((gradeOption) => (
+                      <option key={gradeOption} value={gradeOption}>
+                        {gradeOption}
+                      </option>
+                    ))}
+                  </Select>
                   <Text fontSize="xs" color="gray.500" marginTop={1}>
                     Optional: Your current grade or class
                   </Text>

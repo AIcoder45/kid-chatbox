@@ -15,6 +15,7 @@ export interface QuizConfig {
   subtopics: string[];
   questionCount: number;
   difficulty: Difficulty;
+  instructions?: string; // Optional custom instructions for AI question generation
 }
 
 export interface Question {

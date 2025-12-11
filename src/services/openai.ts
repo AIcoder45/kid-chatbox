@@ -96,6 +96,10 @@ export async function generateQuizQuestions(
 - For older kids (9-14), include more advanced strategies and combinations`;
   }
 
+  const customInstructions = config.instructions
+    ? `\nADDITIONAL INSTRUCTIONS FROM USER:\n${config.instructions}\n\nPlease incorporate these specific requirements into the question generation.`
+    : '';
+
   const prompt = `You are a friendly AI quiz tutor for kids aged ${config.age} years old.
 
 Generate exactly ${config.questionCount} multiple-choice questions for:
@@ -107,6 +111,8 @@ Generate exactly ${config.questionCount} multiple-choice questions for:
 ${languageInstruction}
 
 ${subjectSpecificGuidance}
+
+${customInstructions}
 
 Requirements:
 1. Each question must have exactly 4 options (A, B, C, D)

@@ -94,5 +94,10 @@ export {
   StatLabel,
   StatNumber,
   StatHelpText,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderMark,
 } from '@chakra-ui/react';
 

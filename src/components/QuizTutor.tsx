@@ -3,6 +3,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Box,
   VStack,
@@ -26,9 +27,9 @@ import { AllQuestionsView } from './AllQuestionsView';
 import { Timer } from './Timer';
 import { ResultsView } from './ResultsView';
 import { ConfigurationForm } from './ConfigurationForm';
-import { useNavigate, useLocation, useBlocker } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { generateQuizQuestions, generateImprovementTips } from '@/services/openai';
-import { quizApi, authApi, scheduledTestsApi, profileApi } from '@/services/api';
+import { quizApi, authApi, scheduledTestsApi, profileApi, planApi } from '@/services/api';
 import { QuizConfig, AnswerResult, Question } from '@/types/quiz';
 import { QUIZ_CONSTANTS, SUBJECTS, MESSAGES } from '@/constants/quiz';
 import { isValidAnswer } from '@/utils/validation';
@@ -44,9 +45,13 @@ export const QuizTutor: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [phase, setPhase] = useState<QuizPhase>('config');
-  const [config, setConfig] = useState<QuizConfig | null>(
-    location.state?.config || null
-  );
+  const [config, setConfig] = useState<QuizConfig | null>(() => {
+    try {
+      return (location.state as { config?: QuizConfig })?.config || null;
+    } catch {
+      return null;
+    }
+  });
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Map<number, 'A' | 'B' | 'C' | 'D'>>(
     new Map()
@@ -71,6 +76,7 @@ export const QuizTutor: React.FC = () => {
     subtopics: string[];
     questionCount?: number;
     difficulty: string;
+    instructions?: string;
   }) => {
     // Get user profile data - fetch fresh data from API to ensure we have latest profile
     let userProfile: User | null = null;
@@ -99,6 +105,26 @@ export const QuizTutor: React.FC = () => {
       return;
     }
 
+    // Check plan limits before starting quiz (only for AI-generated quizzes, not scheduled tests)
+    if (!scheduledTestId) {
+      try {
+        const { user } = authApi.getCurrentUser();
+        if (user && (user as { id: string }).id) {
+          const planInfo = await planApi.getUserPlan((user as { id: string }).id);
+          if (planInfo.limits.remainingQuizzes <= 0) {
+            setError(
+              `Daily quiz limit reached. You have used ${planInfo.usage.quizCount} of ${planInfo.limits.dailyQuizLimit} quizzes today. Please try again tomorrow or upgrade your plan.`
+            );
+            setPhase('config');
+            return;
+          }
+        }
+      } catch (planError) {
+        // If plan check fails, log warning but allow quiz to proceed
+        console.warn('Failed to check plan limits:', planError);
+      }
+    }
+
     const fullConfig: QuizConfig = {
       age: userProfile.age,
       language: userProfile.preferredLanguage as QuizConfig['language'],
@@ -106,6 +132,7 @@ export const QuizTutor: React.FC = () => {
       subtopics: quizConfig.subtopics,
       questionCount: quizConfig.questionCount || QUIZ_CONSTANTS.DEFAULT_QUESTIONS,
       difficulty: quizConfig.difficulty as QuizConfig['difficulty'],
+      instructions: quizConfig.instructions,
     };
     setConfig(fullConfig);
     setPhase('loading');
@@ -133,28 +160,26 @@ export const QuizTutor: React.FC = () => {
       );
       setPhase('config');
     }
-  }, []);
+  }, [scheduledTestId]);
 
   /**
-   * Block React Router navigation during quiz
+   * Detect location changes during quiz and block navigation away from quiz page
    */
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      phase === 'quiz' && currentLocation.pathname !== nextLocation.pathname
-  );
-
-  /**
-   * Handle navigation blocker - show confirmation modal
-   */
+  const previousPathnameRef = useRef<string>(location.pathname);
   useEffect(() => {
-    if (blocker.state === 'blocked' && phase === 'quiz') {
-      // Store the navigation function to execute after confirmation
-      pendingNavigationRef.current = () => {
-        blocker.proceed();
-      };
+    if (
+      phase === 'quiz' &&
+      previousPathnameRef.current === '/quiz' &&
+      location.pathname !== '/quiz' &&
+      !isSubmittingRef.current
+    ) {
+      // User navigated away from quiz page - navigate back and show confirmation
+      navigate('/quiz', { replace: true });
+      // Show confirmation modal
       onConfirmOpen();
     }
-  }, [blocker, phase, onConfirmOpen]);
+    previousPathnameRef.current = location.pathname;
+  }, [location.pathname, phase, navigate, onConfirmOpen]);
 
   /**
    * Submit quiz and process results
@@ -303,11 +328,8 @@ export const QuizTutor: React.FC = () => {
    */
   const handleCancelLeave = useCallback(() => {
     onConfirmClose();
-    if (blocker.state === 'blocked') {
-      blocker.reset();
-    }
     pendingNavigationRef.current = null;
-  }, [onConfirmClose, blocker]);
+  }, [onConfirmClose]);
 
   /**
    * Prevent page refresh/back button during quiz
@@ -370,8 +392,20 @@ export const QuizTutor: React.FC = () => {
    */
   const playBeep = useCallback(() => {
     try {
+      // Check if AudioContext is available
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) {
+        console.warn('AudioContext not available');
+        return;
+      }
+
       // Create audio context for beep sound
-      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+      const audioContext = new AudioContextClass();
+      if (!audioContext) {
+        console.warn('Failed to create AudioContext');
+        return;
+      }
+
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
@@ -387,7 +421,7 @@ export const QuizTutor: React.FC = () => {
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.3);
     } catch (err) {
-      // Fallback: use browser beep if AudioContext fails
+      // Silently fail - beep is not critical functionality
       console.warn('Could not play beep sound:', err);
     }
   }, []);
@@ -674,16 +708,37 @@ export const QuizTutor: React.FC = () => {
   if (phase === 'config') {
     return (
       <>
-        <Box padding={{ base: 4, md: 6 }}>
-          <ConfigurationForm onConfigComplete={handleConfigComplete} />
-          {error && (
-            <Alert status="error" marginTop={4} maxWidth="600px" marginX="auto">
-              <AlertIcon />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-        </Box>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Box padding={{ base: 4, md: 6 }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              <ConfigurationForm onConfigComplete={handleConfigComplete} />
+            </motion.div>
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Alert status="error" marginTop={4} maxWidth="600px" marginX="auto" borderRadius="xl">
+                    <AlertIcon />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Box>
+        </motion.div>
         {/* Confirmation Modal for Navigation */}
         <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
           <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
@@ -725,16 +780,48 @@ export const QuizTutor: React.FC = () => {
           alignItems="center"
           minHeight="400px"
         >
-          <VStack spacing={4}>
-            <Spinner size="xl" color="blue.500" />
-            <Text fontSize={{ base: 'md', md: 'lg' }}>
-              {scheduledTestId
-                ? 'Loading your scheduled test...'
-                : config
-                  ? 'Generating your quiz questions...'
-                  : 'Loading results...'}
-            </Text>
-          </VStack>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <VStack spacing={6}>
+              <motion.div
+                animate={{
+                  rotate: 360,
+                }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+              >
+                <Spinner size="xl" color="blue.500" thickness="4px" />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="semibold" textAlign="center">
+                  {scheduledTestId
+                    ? 'Loading your scheduled test...'
+                    : config
+                      ? 'Generating your quiz questions...'
+                      : 'Loading results...'}
+                </Text>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+              >
+                <Text fontSize="sm" color="gray.500" textAlign="center">
+                  Please wait...
+                </Text>
+              </motion.div>
+            </VStack>
+          </motion.div>
         </Box>
         {/* Confirmation Modal for Navigation */}
         <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
@@ -770,42 +857,77 @@ export const QuizTutor: React.FC = () => {
   if (phase === 'quiz' && questions.length > 0) {
     return (
       <>
-        <Box padding={{ base: 4, md: 6 }}>
-          <VStack spacing={{ base: 4, md: 6 }}>
-            {config && (
-              <>
-                <Timer
-                  timeRemaining={timeRemaining}
-                  totalTime={totalTimeRef.current || (config.questionCount * QUIZ_CONSTANTS.TIME_PER_QUESTION_SECONDS)}
-                />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Box padding={{ base: 4, md: 6 }}>
+            <VStack spacing={{ base: 4, md: 6 }}>
+              {config && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  style={{ width: '100%' }}
+                >
+                  <Timer
+                    timeRemaining={timeRemaining}
+                    totalTime={totalTimeRef.current || (config.questionCount * QUIZ_CONSTANTS.TIME_PER_QUESTION_SECONDS)}
+                  />
 
-                <Box width="100%" maxWidth="1000px" marginX="auto">
-                  <Text fontSize={{ base: 'sm', md: 'md' }} color="gray.600" textAlign="center">
-                    Answered: {answeredCount} of {config.questionCount} questions
-                  </Text>
-                </Box>
-              </>
-            )}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <Box width="100%" maxWidth="1000px" marginX="auto" mt={4}>
+                      <Text fontSize={{ base: 'sm', md: 'md' }} color="gray.600" textAlign="center" fontWeight="medium">
+                        Answered: {answeredCount} of {config.questionCount} questions
+                      </Text>
+                    </Box>
+                  </motion.div>
+                </motion.div>
+              )}
 
-            <AllQuestionsView
-              questions={questions}
-              answers={answers}
-              onAnswerSelect={handleAnswerSelect}
-            />
-
-            <Box width="100%" maxWidth="1000px" marginX="auto">
-              <Button
-                colorScheme="green"
-                size={{ base: 'md', md: 'lg' }}
-                onClick={handleSubmitQuiz}
-                width="100%"
-                isDisabled={answeredCount === 0}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                style={{ width: '100%' }}
               >
-                Submit Quiz ({answeredCount}/{config?.questionCount || 0} answered)
-              </Button>
-            </Box>
-          </VStack>
-        </Box>
+                <AllQuestionsView
+                  questions={questions}
+                  answers={answers}
+                  onAnswerSelect={handleAnswerSelect}
+                />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                style={{ width: '100%', maxWidth: '1000px', margin: '0 auto' }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button
+                  colorScheme="green"
+                  size={{ base: 'md', md: 'lg' }}
+                  onClick={handleSubmitQuiz}
+                  width="100%"
+                  isDisabled={answeredCount === 0}
+                  boxShadow="lg"
+                  _hover={{ boxShadow: 'xl' }}
+                  transition="all 0.2s"
+                >
+                  Submit Quiz ({answeredCount}/{config?.questionCount || 0} answered)
+                </Button>
+              </motion.div>
+            </VStack>
+          </Box>
+        </motion.div>
         {/* Confirmation Modal for Navigation */}
         <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
           <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
@@ -840,20 +962,27 @@ export const QuizTutor: React.FC = () => {
   if (phase === 'results' && config && allAnswerResults.length > 0) {
     return (
       <>
-        <Box padding={{ base: 4, md: 6 }}>
-          <ResultsView
-            score={score}
-            totalQuestions={config.questionCount}
-            allAnswerResults={allAnswerResults}
-            config={config}
-            improvementTips={improvementTips}
-            resultSaved={resultSaved}
-            timeTaken={Math.floor((Date.now() - quizStartTime) / 1000)}
-            onStartNewQuiz={handleStartNewQuiz}
-            onRetrySameTopic={handleRetrySameTopic}
-            onBackToDashboard={handleBackToDashboard}
-          />
-        </Box>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Box padding={{ base: 4, md: 6 }}>
+            <ResultsView
+              score={score}
+              totalQuestions={config.questionCount}
+              allAnswerResults={allAnswerResults}
+              config={config}
+              improvementTips={improvementTips}
+              resultSaved={resultSaved}
+              timeTaken={Math.floor((Date.now() - quizStartTime) / 1000)}
+              onStartNewQuiz={handleStartNewQuiz}
+              onRetrySameTopic={handleRetrySameTopic}
+              onBackToDashboard={handleBackToDashboard}
+            />
+          </Box>
+        </motion.div>
         {/* Confirmation Modal for Navigation */}
         <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
           <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />

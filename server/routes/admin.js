@@ -8,6 +8,7 @@ const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { checkPermission, checkRole } = require('../middleware/rbac');
+const { getFreemiumPlan, assignPlanToUser } = require('../utils/plans');
 
 const router = express.Router();
 
@@ -552,6 +553,27 @@ router.post('/users/create', checkPermission('manage_users'), async (req, res, n
            VALUES ($1, $2, $3, true)`,
           [user.id, module, req.user.id]
         );
+      }
+    }
+
+    // Assign Freemium plan to new user (if not already assigned)
+    // Check if user has admin roles - admins don't need plans
+    const userRolesResult = await pool.query(
+      `SELECT r.name 
+       FROM roles r
+       INNER JOIN user_roles ur ON r.id = ur.role_id
+       WHERE ur.user_id = $1 AND r.name IN ('admin', 'super_admin')`,
+      [user.id]
+    );
+
+    // Only assign plan if user is not an admin
+    if (userRolesResult.rows.length === 0) {
+      try {
+        const freemiumPlan = await getFreemiumPlan();
+        await assignPlanToUser(user.id, freemiumPlan.id, req.user.id);
+      } catch (error) {
+        console.error(`Error assigning Freemium plan to user ${user.id} (${user.email}) created by admin ${req.user.id}:`, error.message || error);
+        // Don't fail user creation if plan assignment fails
       }
     }
 

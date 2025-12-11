@@ -2,6 +2,7 @@
  * ResultsView component displays quiz results with all answers and explanations
  */
 
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Box,
   VStack,
@@ -68,57 +69,113 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
   return (
     <VStack spacing={6} width="100%" maxWidth="900px" margin="0 auto">
-      <Card width="100%">
-        <CardBody>
-          <VStack spacing={4}>
-            <Heading size="lg" color="blue.600">
-              {MESSAGES.QUIZ_COMPLETED}
-            </Heading>
+      <motion.div
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        style={{ width: '100%' }}
+      >
+        <Card width="100%" boxShadow="xl" borderRadius="xl">
+          <CardBody>
+            <VStack spacing={4}>
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              >
+                <Heading size="lg" color="blue.600" textAlign="center">
+                  {MESSAGES.QUIZ_COMPLETED}
+                </Heading>
+              </motion.div>
 
-            <Text fontSize="xl" fontWeight="bold">
-              {MESSAGES.SCORE_MESSAGE} {score} out of {totalQuestions} questions correctly.
-            </Text>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Text fontSize="xl" fontWeight="bold" textAlign="center">
+                  {MESSAGES.SCORE_MESSAGE} {score} out of {totalQuestions} questions correctly.
+                </Text>
+              </motion.div>
 
-            <Text fontSize="md" color="gray.600">
-              ⏱️ Time Taken: {formatTime(timeTaken)}
-            </Text>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                <Text fontSize="md" color="gray.600" textAlign="center">
+                  ⏱️ Time Taken: {formatTime(timeTaken)}
+                </Text>
+              </motion.div>
 
-            <Progress
-              value={percentage}
-              colorScheme={percentage >= 70 ? 'green' : percentage >= 50 ? 'yellow' : 'orange'}
-              size="lg"
-              width="100%"
-              borderRadius="md"
-            />
+              <Box width="100%">
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
+                  style={{ transformOrigin: 'left' }}
+                >
+                  <Progress
+                    value={percentage}
+                    colorScheme={percentage >= 70 ? 'green' : percentage >= 50 ? 'yellow' : 'orange'}
+                    size="lg"
+                    width="100%"
+                    borderRadius="full"
+                  />
+                </motion.div>
+              </Box>
 
-            <Text fontSize="md" color="gray.600">
-              {MESSAGES.MOTIVATIONAL}
-            </Text>
-          </VStack>
-        </CardBody>
-      </Card>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+              >
+                <Text fontSize="md" color="gray.600" textAlign="center">
+                  {MESSAGES.MOTIVATIONAL}
+                </Text>
+              </motion.div>
+            </VStack>
+          </CardBody>
+        </Card>
+      </motion.div>
 
-      <Card width="100%">
-        <CardBody>
-          <VStack spacing={4} align="stretch">
-            <Heading size="md" color="blue.600">
-              Review All Answers:
-            </Heading>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.5 }}
+        style={{ width: '100%' }}
+      >
+        <Card width="100%" boxShadow="lg" borderRadius="xl">
+          <CardBody>
+            <VStack spacing={4} align="stretch">
+              <Heading size="md" color="blue.600">
+                Review All Answers:
+              </Heading>
 
-            {allAnswerResults.map((result) => {
+              <AnimatePresence>
+                {allAnswerResults.map((result, index) => {
               const bgColor = result.isCorrect ? 'green.50' : 'orange.50';
               const borderColor = result.isCorrect ? 'green.200' : 'orange.200';
               const statusIcon = result.isCorrect ? '✅' : '❌';
 
-              return (
-                <Box
-                  key={result.questionNumber}
-                  padding={4}
-                  borderRadius="md"
-                  bg={bgColor}
-                  borderWidth={1}
-                  borderColor={borderColor}
-                >
+                  return (
+                    <motion.div
+                      key={result.questionNumber}
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 30 }}
+                      transition={{ delay: index * 0.1, duration: 0.4 }}
+                    >
+                      <Box
+                        padding={4}
+                        borderRadius="xl"
+                        bg={bgColor}
+                        borderWidth={2}
+                        borderColor={borderColor}
+                        boxShadow="md"
+                        _hover={{ boxShadow: 'lg', transform: 'translateY(-2px)' }}
+                        transition="all 0.2s"
+                      >
                   <VStack align="stretch" spacing={2}>
                     <Text fontWeight="bold" fontSize="md">
                       {statusIcon} Q{result.questionNumber}: {result.question}
@@ -188,76 +245,114 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                       <Text fontSize="sm" color="gray.700" lineHeight="tall">
                         {result.explanation}
                       </Text>
-                    </Box>
-                  </VStack>
-                </Box>
-              );
-            })}
-          </VStack>
-        </CardBody>
-      </Card>
-
-      {improvementTips.length > 0 && (
-        <Card width="100%">
-          <CardBody>
-            <VStack spacing={3} align="stretch">
-              <Heading size="md" color="blue.600">
-                Tips to Improve:
-              </Heading>
-              {improvementTips.map((tip, index) => (
-                <Alert key={index} status="info" borderRadius="md">
-                  <AlertIcon />
-                  <AlertDescription>{tip}</AlertDescription>
-                </Alert>
-              ))}
+                      </Box>
+                    </VStack>
+                  </Box>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </VStack>
           </CardBody>
         </Card>
-      )}
+      </motion.div>
 
-      {resultSaved && (
-        <Alert status="success" borderRadius="md">
-          <AlertIcon />
-          <Text fontSize="md">{APP_MESSAGES.QUIZ_SAVED}</Text>
-        </Alert>
-      )}
-
-      <VStack spacing={3} width="100%">
-        <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="semibold">
-          {MESSAGES.ANOTHER_QUIZ}
-        </Text>
-        <Box display="flex" gap={4} flexWrap="wrap" justifyContent="center" w="100%">
-          <Button
-            colorScheme="blue"
-            size={{ base: 'md', md: 'lg' }}
-            onClick={onRetrySameTopic}
-            w={{ base: '100%', sm: 'auto' }}
+      <AnimatePresence>
+        {improvementTips.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ delay: 1, duration: 0.5 }}
+            style={{ width: '100%' }}
           >
-            Try Same Topic Again
-          </Button>
-          <Button
-            colorScheme="green"
-            size={{ base: 'md', md: 'lg' }}
-            onClick={onStartNewQuiz}
-            w={{ base: '100%', sm: 'auto' }}
-          >
-            Try Different Topic
-          </Button>
-          <Button
-            colorScheme="gray"
-            size={{ base: 'md', md: 'lg' }}
-            onClick={onBackToDashboard}
-            w={{ base: '100%', sm: 'auto' }}
-          >
-            Back to Dashboard
-          </Button>
-        </Box>
-        {resultSaved && (
-          <Text fontSize="sm" color="gray.600" textAlign="center" marginTop={2}>
-            💡 Tip: You can view all your quiz history anytime from the menu or dashboard!
-          </Text>
+            <Card width="100%" boxShadow="lg" borderRadius="xl">
+              <CardBody>
+                <VStack spacing={3} align="stretch">
+                  <Heading size="md" color="blue.600">
+                    Tips to Improve:
+                  </Heading>
+                  {improvementTips.map((tip, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 1.2 + index * 0.1 }}
+                    >
+                      <Alert status="info" borderRadius="xl" boxShadow="sm">
+                        <AlertIcon />
+                        <AlertDescription>{tip}</AlertDescription>
+                      </Alert>
+                    </motion.div>
+                  ))}
+                </VStack>
+              </CardBody>
+            </Card>
+          </motion.div>
         )}
-      </VStack>
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {resultSaved && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ delay: 1.5, type: 'spring', stiffness: 200 }}
+            style={{ width: '100%' }}
+          >
+            <Alert status="success" borderRadius="xl" boxShadow="md">
+              <AlertIcon />
+              <Text fontSize="md" fontWeight="semibold">{APP_MESSAGES.QUIZ_SAVED}</Text>
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.6, duration: 0.5 }}
+        style={{ width: '100%' }}
+      >
+        <VStack spacing={3} width="100%">
+          <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="semibold" textAlign="center">
+            {MESSAGES.ANOTHER_QUIZ}
+          </Text>
+          <Box display="flex" gap={4} flexWrap="wrap" justifyContent="center" w="100%">
+            {[
+              { label: 'Try Same Topic Again', onClick: onRetrySameTopic, colorScheme: 'blue' as const, delay: 1.7 },
+              { label: 'Try Different Topic', onClick: onStartNewQuiz, colorScheme: 'green' as const, delay: 1.8 },
+              { label: 'Back to Dashboard', onClick: onBackToDashboard, colorScheme: 'gray' as const, delay: 1.9 },
+            ].map((button, index) => (
+              <motion.div
+                key={button.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: button.delay }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  colorScheme={button.colorScheme}
+                  size={{ base: 'md', md: 'lg' }}
+                  onClick={button.onClick}
+                  w={{ base: '100%', sm: 'auto' }}
+                  boxShadow="md"
+                  _hover={{ boxShadow: 'lg' }}
+                >
+                  {button.label}
+                </Button>
+              </motion.div>
+            ))}
+          </Box>
+          {resultSaved && (
+            <Text fontSize="sm" color="gray.600" textAlign="center" marginTop={2}>
+              💡 Tip: You can view all your quiz history anytime from the menu or dashboard!
+            </Text>
+          )}
+        </VStack>
+      </motion.div>
     </VStack>
   );
 };

@@ -71,7 +71,7 @@ router.post('/register', async (req, res, next) => {
       const freemiumPlan = await getFreemiumPlan();
       await assignPlanToUser(user.id, freemiumPlan.id);
     } catch (error) {
-      console.error('Error assigning Freemium plan:', error);
+      console.error(`Error assigning Freemium plan to user ${user.id} (${user.email}):`, error.message || error);
       // Don't fail registration if plan assignment fails
     }
 
@@ -261,7 +261,7 @@ router.post('/google', async (req, res, next) => {
         const freemiumPlan = await getFreemiumPlan();
         await assignPlanToUser(user.id, freemiumPlan.id);
       } catch (error) {
-        console.error('Error assigning Freemium plan:', error);
+        console.error(`Error assigning Freemium plan to OAuth user ${user.id} (${user.email}):`, error.message || error);
         // Don't fail registration if plan assignment fails
       }
     } else {
@@ -329,12 +329,33 @@ router.post('/social', async (req, res, next) => {
     if (result.rows.length === 0) {
       // Create new user
       result = await pool.query(
-        `INSERT INTO users (email, name, password_hash)
-         VALUES ($1, $2, $3)
-         RETURNING id, email, name, age, grade, preferred_language, created_at`,
+        `INSERT INTO users (email, name, password_hash, status)
+         VALUES ($1, $2, $3, 'pending')
+         RETURNING id, email, name, age, grade, preferred_language, status, created_at`,
         [email, name, null]
       );
       user = result.rows[0];
+
+      // Assign default 'student' role
+      const studentRoleResult = await pool.query(
+        "SELECT id FROM roles WHERE name = 'student'"
+      );
+
+      if (studentRoleResult.rows.length > 0) {
+        await pool.query(
+          'INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)',
+          [user.id, studentRoleResult.rows[0].id]
+        );
+      }
+
+      // Assign Freemium plan to new user
+      try {
+        const freemiumPlan = await getFreemiumPlan();
+        await assignPlanToUser(user.id, freemiumPlan.id);
+      } catch (error) {
+        console.error(`Error assigning Freemium plan to social login user ${user.id} (${user.email}):`, error.message || error);
+        // Don't fail registration if plan assignment fails
+      }
     } else {
       user = result.rows[0];
     }

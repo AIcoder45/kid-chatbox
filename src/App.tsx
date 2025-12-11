@@ -10,6 +10,7 @@ import { ModuleAccessGuard } from '@/components/ModuleAccessGuard';
 import { Dashboard } from '@/components/Dashboard';
 import { StudyMode } from '@/components/StudyMode';
 import { QuizTutor } from '@/components/QuizTutor';
+import { QuizTutorErrorBoundary } from '@/components/QuizTutorErrorBoundary';
 import { QuizHistory } from '@/components/QuizHistory';
 import { StudyHistory } from '@/components/StudyHistory';
 import { StudyLibrary } from '@/components/StudyLibrary';
@@ -184,7 +185,9 @@ export const App: React.FC = () => {
               <AuthGuard>
                 <ModuleAccessGuard module="quiz">
                   <StudentLayout user={user}>
-                    <QuizTutor />
+                    <QuizTutorErrorBoundary>
+                      <QuizTutor />
+                    </QuizTutorErrorBoundary>
                   </StudentLayout>
                 </ModuleAccessGuard>
               </AuthGuard>

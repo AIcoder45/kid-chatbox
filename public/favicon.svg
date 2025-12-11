@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="url(#aiGradient)" />
+  <!-- AI Brain/Neural Network Icon -->
+  <g fill="white" opacity="0.95">
+    <!-- Central node -->
+    <circle cx="50" cy="50" r="8" />
+    <!-- Neural network nodes -->
+    <circle cx="30" cy="35" r="5" />
+    <circle cx="70" cy="35" r="5" />
+    <circle cx="30" cy="65" r="5" />
+    <circle cx="70" cy="65" r="5" />
+    <circle cx="50" cy="25" r="5" />
+    <circle cx="50" cy="75" r="5" />
+    <!-- Connection lines -->
+    <line x1="50" y1="50" x2="30" y2="35" stroke="white" stroke-width="2" opacity="0.6" />
+    <line x1="50" y1="50" x2="70" y2="35" stroke="white" stroke-width="2" opacity="0.6" />
+    <line x1="50" y1="50" x2="30" y2="65" stroke="white" stroke-width="2" opacity="0.6" />
+    <line x1="50" y1="50" x2="70" y2="65" stroke="white" stroke-width="2" opacity="0.6" />
+    <line x1="50" y1="50" x2="50" y2="25" stroke="white" stroke-width="2" opacity="0.6" />
+    <line x1="50" y1="50" x2="50" y2="75" stroke="white" stroke-width="2" opacity="0.6" />
+    <!-- Sparkle effect for AI -->
+    <circle cx="25" cy="30" r="2" fill="white" opacity="0.8" />
+    <circle cx="75" cy="30" r="2" fill="white" opacity="0.8" />
+    <circle cx="25" cy="70" r="2" fill="white" opacity="0.8" />
+    <circle cx="75" cy="70" r="2" fill="white" opacity="0.8" />
+  </g>
+</svg>
+

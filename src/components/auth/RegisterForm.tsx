@@ -13,12 +13,13 @@ import {
   Radio,
   RadioGroup,
   Stack,
+  Select,
 } from '@/shared/design-system';
 import { authApi, getErrorMessage } from '@/services/api';
 import { RegisterData } from '@/types';
 import { LANGUAGES, QUIZ_CONSTANTS } from '@/constants/quiz';
 import { Language } from '@/types/quiz';
-import { REGISTER_CONSTANTS } from '@/constants/auth';
+import { REGISTER_CONSTANTS, GRADES } from '@/constants/auth';
 
 interface RegisterFormProps {
   onRegisterSuccess: () => void;
@@ -149,16 +150,22 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="gray.700">
               Grade/Class (optional)
             </Text>
-            <Input
-              value={formData.grade}
-              onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-              placeholder="e.g., Class 3, Grade 5"
+            <Select
+              value={formData.grade || ''}
+              onChange={(e) => setFormData({ ...formData, grade: e.target.value || undefined })}
+              placeholder="Select your grade/class"
               size="lg"
               borderRadius="lg"
               borderColor="gray.300"
               _hover={{ borderColor: 'blue.400' }}
               _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
-            />
+            >
+              {GRADES.map((grade) => (
+                <option key={grade} value={grade}>
+                  {grade}
+                </option>
+              ))}
+            </Select>
           </Box>
 
           <Box width="100%">

@@ -6,6 +6,7 @@ const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { checkModuleAccess } = require('../middleware/rbac');
+const { incrementQuizCount } = require('../utils/plans');
 
 const router = express.Router();
 
@@ -100,6 +101,15 @@ router.post('/results', authenticateToken, checkModuleAccess('quiz'), async (req
           answer.isCorrect,
           answer.options ? JSON.stringify(answer.options) : null,
         ]);
+      }
+
+      // Increment quiz count for plan limits (only for AI-generated quizzes)
+      // Scheduled tests are handled separately
+      try {
+        await incrementQuizCount(userId);
+      } catch (incrementError) {
+        // Log error but don't fail the request
+        console.error('Error incrementing quiz count:', incrementError);
       }
 
       await client.query('COMMIT');
