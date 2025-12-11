@@ -238,6 +238,26 @@ router.put('/users/:id/approve', checkPermission('approve_users'), async (req, r
           [id, module, req.user.id]
         );
       }
+
+      // Send approval email to user
+      try {
+        const userResult = await pool.query(
+          'SELECT email, name FROM users WHERE id = $1',
+          [id]
+        );
+        
+        if (userResult.rows.length > 0) {
+          const user = userResult.rows[0];
+          const { sendApprovalEmail } = require('../utils/email');
+          await sendApprovalEmail({
+            email: user.email,
+            name: user.name,
+          });
+        }
+      } catch (emailError) {
+        // Log error but don't fail approval if email fails
+        console.error(`Failed to send approval email to user ${id}:`, emailError.message);
+      }
     } else if (status === 'rejected') {
       // Revoke module access if rejected
       await pool.query(

@@ -117,6 +117,32 @@ router.post('/results', authenticateToken, checkModuleAccess('quiz'), async (req
 
       await client.query('COMMIT');
 
+      // Send quiz completion email
+      try {
+        const userResult = await pool.query(
+          'SELECT email, name FROM users WHERE id = $1',
+          [userId]
+        );
+
+        if (userResult.rows.length > 0) {
+          const user = userResult.rows[0];
+          const { sendQuizCompletionEmail } = require('../utils/email');
+          await sendQuizCompletionEmail({
+            email: user.email,
+            name: user.name,
+            subject: subject,
+            subtopic: subtopic || null,
+            scorePercentage: score_percentage,
+            correctAnswers: correct_count,
+            totalQuestions: correct_count + wrong_count,
+            timeTaken: time_taken || 0,
+          });
+        }
+      } catch (emailError) {
+        // Log error but don't fail quiz save if email fails
+        console.error(`Failed to send quiz completion email to user ${userId}:`, emailError.message);
+      }
+
       res.status(201).json({
         success: true,
         id: quizResultId,

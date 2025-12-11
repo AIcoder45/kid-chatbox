@@ -56,6 +56,7 @@ import {
 import { adminApi, scheduledTestsApi, ScheduledTest } from '@/services/admin';
 import { planApi } from '@/services/api';
 import { Topic, Subtopic, Quiz, QuizQuestion } from '@/services/admin';
+import { QuizReport } from './quiz/QuizReport';
 
 /**
  * Quiz Management component
@@ -85,6 +86,8 @@ export const QuizManagement: React.FC = () => {
   const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
   const [viewingScheduledTest, setViewingScheduledTest] = useState<ScheduledTest | null>(null);
   const [editingScheduledTestId, setEditingScheduledTestId] = useState<string | null>(null);
+  const [reportScheduledTestId, setReportScheduledTestId] = useState<string | null>(null);
+  const { isOpen: isReportOpen, onOpen: onReportOpen, onClose: onReportClose } = useDisclosure();
   const toast = useToast();
 
   // AI Generation Form State
@@ -738,6 +741,11 @@ export const QuizManagement: React.FC = () => {
     }
   };
 
+  const handleViewReport = (testId: string) => {
+    setReportScheduledTestId(testId);
+    onReportOpen();
+  };
+
   const handleDeleteScheduledTest = async (testId: string) => {
     if (!confirm('Are you sure you want to delete this scheduled test?')) {
       return;
@@ -1359,6 +1367,16 @@ export const QuizManagement: React.FC = () => {
                                 >
                                   Edit
                                 </Button>
+                                {(test.status === 'completed' || test.status === 'active') && (
+                                  <Button
+                                    size="xs"
+                                    colorScheme="green"
+                                    variant="outline"
+                                    onClick={() => handleViewReport(test.id)}
+                                  >
+                                    Report
+                                  </Button>
+                                )}
                                 <IconButton
                                   aria-label="Delete scheduled test"
                                   icon={<Text>🗑️</Text>}
@@ -2496,6 +2514,18 @@ export const QuizManagement: React.FC = () => {
             </ModalFooter>
           </ModalContent>
         </Modal>
+
+        {/* Quiz Report Modal */}
+        {reportScheduledTestId && (
+          <QuizReport
+            scheduledTestId={reportScheduledTestId}
+            isOpen={isReportOpen}
+            onClose={() => {
+              onReportClose();
+              setReportScheduledTestId(null);
+            }}
+          />
+        )}
       </VStack>
     </Box>
   );

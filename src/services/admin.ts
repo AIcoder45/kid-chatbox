@@ -867,5 +867,46 @@ export const scheduledTestsApi = {
     const response = await apiClient.get(`/scheduled-tests/${id}/eligible-users`);
     return response.data;
   },
+
+  /**
+   * Get participants and results for a scheduled test
+   */
+  getScheduledTestParticipants: async (id: string): Promise<{
+    scheduledTest: {
+      id: string;
+      quizName: string;
+      scheduledFor: string;
+      durationMinutes?: number;
+      deadline?: string | null;
+      numberOfQuestions: number;
+      passingPercentage: number;
+    };
+    participants: Array<{
+      attemptId: string;
+      userId: string;
+      userName: string;
+      userEmail: string;
+      startedAt: string;
+      completedAt: string;
+      timeTaken: number;
+      score: number;
+      scorePercentage: number;
+      correctAnswers: number;
+      wrongAnswers: number;
+      isOnTime: boolean;
+    }>;
+    statistics: {
+      totalParticipants: number;
+      totalMarks: number;
+      averageScore: number;
+      averagePercentage: number;
+      passedCount: number;
+      failedCount: number;
+      passRate: number;
+    };
+  }> => {
+    const response = await apiClient.get(`/scheduled-tests/${id}/participants`);
+    return response.data;
+  },
 };
 

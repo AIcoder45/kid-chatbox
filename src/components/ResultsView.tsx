@@ -15,6 +15,10 @@ import {
   Alert,
   AlertIcon,
   AlertDescription,
+  HStack,
+  List,
+  ListItem,
+  ListIcon,
 } from '@/shared/design-system';
 import { AnswerResult, QuizConfig } from '@/types/quiz';
 import { MESSAGES } from '@/constants/quiz';
@@ -56,6 +60,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onBackToDashboard,
 }) => {
   const percentage = Math.round((score / totalQuestions) * 100);
+  const PASSING_THRESHOLD = 60;
+  const hasPassed = percentage >= PASSING_THRESHOLD;
 
   // Format time taken
   const formatTime = (seconds: number): string => {
@@ -67,33 +73,169 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     return `${secs}s`;
   };
 
+  // Extract key improvement areas from wrong answers
+  const getKeyImprovementAreas = (): string[] => {
+    const wrongAnswers = allAnswerResults.filter((r) => !r.isCorrect);
+    if (wrongAnswers.length === 0) return [];
+
+    const areas: string[] = [];
+    
+    // Analyze wrong answers to identify patterns
+    const topics = new Set<string>();
+    wrongAnswers.forEach((answer) => {
+      // Extract topic/subject from question (simple keyword extraction)
+      const question = answer.question.toLowerCase();
+      if (question.includes('grammar') || question.includes('tense') || question.includes('verb')) {
+        topics.add('Grammar and Language Rules');
+      }
+      if (question.includes('calculation') || question.includes('solve') || question.includes('math')) {
+        topics.add('Problem Solving and Calculations');
+      }
+      if (question.includes('remember') || question.includes('recall') || question.includes('define')) {
+        topics.add('Memory and Recall');
+      }
+      if (question.includes('understand') || question.includes('explain') || question.includes('why')) {
+        topics.add('Concept Understanding');
+      }
+      if (question.includes('apply') || question.includes('use') || question.includes('practice')) {
+        topics.add('Application of Concepts');
+      }
+    });
+
+    // Add specific improvement areas based on wrong answers
+    if (topics.size > 0) {
+      areas.push(...Array.from(topics));
+    } else {
+      // Generic improvement areas if no specific patterns found
+      areas.push('Review the topics you got wrong');
+      areas.push('Practice more questions on similar concepts');
+      areas.push('Focus on understanding explanations');
+    }
+
+    // Add count-based insights
+    if (wrongAnswers.length > totalQuestions * 0.5) {
+      areas.unshift('Need more practice on fundamental concepts');
+    }
+    if (wrongAnswers.some((a) => !a.childAnswer)) {
+      areas.push('Work on time management to answer all questions');
+    }
+
+    return areas.slice(0, 5); // Limit to 5 key areas
+  };
+
+  const keyImprovementAreas = hasPassed ? [] : getKeyImprovementAreas();
+
   return (
     <VStack spacing={6} width="100%" maxWidth="900px" margin="0 auto">
+      {/* Celebration Animation for Passing */}
+      {hasPassed && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, type: 'spring', stiffness: 100 }}
+          style={{ width: '100%' }}
+        >
+          <Card
+            width="100%"
+            boxShadow="2xl"
+            borderRadius="xl"
+            bgGradient="linear(to-r, green.400, green.500, green.600)"
+            borderWidth={4}
+            borderColor="green.300"
+          >
+            <CardBody>
+              <VStack spacing={4}>
+                {/* Animated Celebration Icons */}
+                <HStack spacing={4} justifyContent="center" flexWrap="wrap">
+                  {['🎉', '🏆', '⭐', '🎊', '👏'].map((emoji, index) => (
+                    <motion.div
+                      key={emoji}
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ 
+                        scale: [0, 1.2, 1],
+                        rotate: [0, 360],
+                      }}
+                      transition={{
+                        delay: index * 0.1,
+                        duration: 0.6,
+                        type: 'spring',
+                        stiffness: 200,
+                      }}
+                      whileHover={{ scale: 1.3, rotate: 360 }}
+                    >
+                      <Text fontSize="4xl">{emoji}</Text>
+                    </motion.div>
+                  ))}
+                </HStack>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <Heading
+                    size="2xl"
+                    color="white"
+                    textAlign="center"
+                    textShadow="2px 2px 4px rgba(0,0,0,0.2)"
+                  >
+                    🎊 Congratulations! 🎊
+                  </Heading>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7, type: 'spring', stiffness: 150 }}
+                >
+                  <Text fontSize="xl" fontWeight="bold" color="white" textAlign="center">
+                    You've Passed with {percentage}%!
+                  </Text>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.9 }}
+                >
+                  <Text fontSize="lg" color="green.50" textAlign="center" fontWeight="semibold">
+                    Excellent work! Keep up the great effort! 🌟
+                  </Text>
+                </motion.div>
+              </VStack>
+            </CardBody>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Results Card */}
       <motion.div
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
+        transition={{ duration: 0.6, ease: 'easeOut', delay: hasPassed ? 1 : 0 }}
         style={{ width: '100%' }}
       >
         <Card width="100%" boxShadow="xl" borderRadius="xl">
           <CardBody>
             <VStack spacing={4}>
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              >
-                <Heading size="lg" color="blue.600" textAlign="center">
-                  {MESSAGES.QUIZ_COMPLETED}
-                </Heading>
-              </motion.div>
+              {!hasPassed && (
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                >
+                  <Heading size="lg" color="blue.600" textAlign="center">
+                    {MESSAGES.QUIZ_COMPLETED}
+                  </Heading>
+                </motion.div>
+              )}
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: hasPassed ? 1.2 : 0.3 }}
               >
-                <Text fontSize="xl" fontWeight="bold" textAlign="center">
+                <Text fontSize="xl" fontWeight="bold" textAlign="center" color={hasPassed ? 'green.600' : 'gray.700'}>
                   {MESSAGES.SCORE_MESSAGE} {score} out of {totalQuestions} questions correctly.
                 </Text>
               </motion.div>
@@ -112,12 +254,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
+                  transition={{ delay: hasPassed ? 1.3 : 0.5, duration: 1, ease: 'easeOut' }}
                   style={{ transformOrigin: 'left' }}
                 >
                   <Progress
                     value={percentage}
-                    colorScheme={percentage >= 70 ? 'green' : percentage >= 50 ? 'yellow' : 'orange'}
+                    colorScheme={hasPassed ? 'green' : percentage >= 50 ? 'yellow' : 'orange'}
                     size="lg"
                     width="100%"
                     borderRadius="full"
@@ -128,10 +270,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
+                transition={{ delay: hasPassed ? 1.5 : 0.7 }}
               >
-                <Text fontSize="md" color="gray.600" textAlign="center">
-                  {MESSAGES.MOTIVATIONAL}
+                <Text fontSize="md" color={hasPassed ? 'green.600' : 'gray.600'} textAlign="center" fontWeight={hasPassed ? 'semibold' : 'normal'}>
+                  {hasPassed ? '🎉 Outstanding performance! You\'ve mastered this topic!' : MESSAGES.MOTIVATIONAL}
                 </Text>
               </motion.div>
             </VStack>
@@ -257,29 +399,85 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         </Card>
       </motion.div>
 
+      {/* Key Improvement Areas - Show prominently when failed */}
+      {!hasPassed && keyImprovementAreas.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 30, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.8, duration: 0.5, type: 'spring' }}
+          style={{ width: '100%' }}
+        >
+          <Card
+            width="100%"
+            boxShadow="xl"
+            borderRadius="xl"
+            bgGradient="linear(to-r, orange.50, red.50)"
+            borderWidth={3}
+            borderColor="orange.300"
+          >
+            <CardBody>
+              <VStack spacing={4} align="stretch">
+                <HStack spacing={2} justifyContent="center">
+                  <Text fontSize="3xl">🎯</Text>
+                  <Heading size="lg" color="orange.700" textAlign="center">
+                    Key Improvement Areas
+                  </Heading>
+                  <Text fontSize="3xl">🎯</Text>
+                </HStack>
+                <Text fontSize="md" color="orange.800" textAlign="center" fontWeight="semibold">
+                  Focus on these areas to improve your score:
+                </Text>
+                <List spacing={3}>
+                  {keyImprovementAreas.map((area, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 1 + index * 0.1 }}
+                    >
+                      <ListItem>
+                        <HStack spacing={3}>
+                          <ListIcon as="span" fontSize="xl" color="orange.500">
+                            📌
+                          </ListIcon>
+                          <Text fontSize="md" color="gray.700" fontWeight="medium">
+                            {area}
+                          </Text>
+                        </HStack>
+                      </ListItem>
+                    </motion.div>
+                  ))}
+                </List>
+              </VStack>
+            </CardBody>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* General Improvement Tips */}
       <AnimatePresence>
         {improvementTips.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ delay: 1, duration: 0.5 }}
+            transition={{ delay: hasPassed ? 1.6 : 1.2, duration: 0.5 }}
             style={{ width: '100%' }}
           >
             <Card width="100%" boxShadow="lg" borderRadius="xl">
               <CardBody>
                 <VStack spacing={3} align="stretch">
                   <Heading size="md" color="blue.600">
-                    Tips to Improve:
+                    {hasPassed ? '💡 Tips to Excel Further:' : '💡 Tips to Improve:'}
                   </Heading>
                   {improvementTips.map((tip, index) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 1.2 + index * 0.1 }}
+                      transition={{ delay: (hasPassed ? 1.8 : 1.4) + index * 0.1 }}
                     >
-                      <Alert status="info" borderRadius="xl" boxShadow="sm">
+                      <Alert status={hasPassed ? 'success' : 'info'} borderRadius="xl" boxShadow="sm">
                         <AlertIcon />
                         <AlertDescription>{tip}</AlertDescription>
                       </Alert>

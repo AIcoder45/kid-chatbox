@@ -553,5 +553,149 @@ router.get('/my-tests', async (req, res, next) => {
   }
 });
 
+/**
+ * Get participants and results for a scheduled test
+ * GET /api/scheduled-tests/:id/participants
+ */
+router.get('/:id/participants', checkPermission('manage_quizzes'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Get scheduled test details
+    const testResult = await pool.query(
+      `SELECT 
+        st.*,
+        q.name as quiz_name,
+        q.time_limit as quiz_time_limit,
+        q.number_of_questions,
+        q.passing_percentage
+      FROM scheduled_tests st
+      INNER JOIN quizzes q ON st.quiz_id = q.id
+      WHERE st.id = $1`,
+      [id]
+    );
+
+    if (testResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Scheduled test not found',
+      });
+    }
+
+    const scheduledTest = testResult.rows[0];
+    const quizId = scheduledTest.quiz_id;
+    const scheduledFor = new Date(scheduledTest.scheduled_for);
+    
+    // Calculate deadline: scheduled_for + duration_minutes (or quiz time_limit if duration_minutes not set)
+    const durationMinutes = scheduledTest.duration_minutes || scheduledTest.quiz_time_limit || null;
+    const deadline = durationMinutes 
+      ? new Date(scheduledFor.getTime() + durationMinutes * 60 * 1000)
+      : null;
+
+    // Get all quiz attempts for this quiz
+    const attemptsResult = await pool.query(
+      `SELECT 
+        qa.id,
+        qa.user_id,
+        qa.started_at,
+        qa.completed_at,
+        qa.time_taken,
+        qa.score,
+        qa.score_percentage,
+        qa.correct_answers,
+        qa.wrong_answers,
+        qa.status,
+        u.name as user_name,
+        u.email as user_email
+      FROM quiz_attempts qa
+      INNER JOIN users u ON qa.user_id = u.id
+      WHERE qa.quiz_id = $1
+      AND qa.status = 'completed'
+      ORDER BY qa.completed_at DESC`,
+      [quizId]
+    );
+
+    // Filter participants based on scheduled test assignment (plan_ids or user_ids)
+    let eligibleUserIds = [];
+    
+    if (scheduledTest.user_ids && scheduledTest.user_ids.length > 0) {
+      eligibleUserIds = scheduledTest.user_ids;
+    } else if (scheduledTest.plan_ids && scheduledTest.plan_ids.length > 0) {
+      // Get users with these plans
+      const usersResult = await pool.query(
+        `SELECT DISTINCT user_id FROM user_plans WHERE plan_id = ANY($1::uuid[])`,
+        [scheduledTest.plan_ids]
+      );
+      eligibleUserIds = usersResult.rows.map(row => row.user_id);
+    }
+
+    // Filter attempts to only include eligible participants and on-time submissions
+    const participants = attemptsResult.rows
+      .filter(attempt => {
+        // Check if user is eligible
+        if (eligibleUserIds.length > 0 && !eligibleUserIds.includes(attempt.user_id)) {
+          return false;
+        }
+        
+        // Check if submission is on time (only if deadline exists)
+        if (deadline && attempt.completed_at) {
+          const completedAt = new Date(attempt.completed_at);
+          return completedAt <= deadline;
+        }
+        
+        return true;
+      })
+      .map(attempt => ({
+        attemptId: attempt.id,
+        userId: attempt.user_id,
+        userName: attempt.user_name,
+        userEmail: attempt.user_email,
+        startedAt: attempt.started_at,
+        completedAt: attempt.completed_at,
+        timeTaken: attempt.time_taken,
+        score: attempt.score,
+        scorePercentage: parseFloat(attempt.score_percentage) || 0,
+        correctAnswers: attempt.correct_answers,
+        wrongAnswers: attempt.wrong_answers,
+        isOnTime: deadline ? new Date(attempt.completed_at) <= deadline : true,
+      }));
+
+    // Calculate statistics
+    const totalParticipants = participants.length;
+    const totalMarks = participants.reduce((sum, p) => sum + (p.score || 0), 0);
+    const averageScore = totalParticipants > 0 ? totalMarks / totalParticipants : 0;
+    const averagePercentage = totalParticipants > 0 
+      ? participants.reduce((sum, p) => sum + p.scorePercentage, 0) / totalParticipants 
+      : 0;
+    const passedCount = participants.filter(p => p.scorePercentage >= (scheduledTest.passing_percentage || 60)).length;
+    const failedCount = totalParticipants - passedCount;
+
+    res.json({
+      success: true,
+      scheduledTest: {
+        id: scheduledTest.id,
+        quizName: scheduledTest.quiz_name,
+        scheduledFor: scheduledTest.scheduled_for,
+        durationMinutes: scheduledTest.duration_minutes,
+        deadline: deadline ? deadline.toISOString() : null,
+        numberOfQuestions: scheduledTest.number_of_questions,
+        passingPercentage: scheduledTest.passing_percentage || 60,
+      },
+      participants,
+      statistics: {
+        totalParticipants,
+        totalMarks,
+        averageScore: Math.round(averageScore * 100) / 100,
+        averagePercentage: Math.round(averagePercentage * 100) / 100,
+        passedCount,
+        failedCount,
+        passRate: totalParticipants > 0 ? Math.round((passedCount / totalParticipants) * 10000) / 100 : 0,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
 

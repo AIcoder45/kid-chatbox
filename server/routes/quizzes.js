@@ -590,6 +590,37 @@ router.post('/attempts/:attemptId/submit', checkModuleAccess('quiz'), async (req
       );
     }
 
+    // Send quiz completion email
+    try {
+      const userResult = await pool.query(
+        'SELECT email, name FROM users WHERE id = $1',
+        [req.user.id]
+      );
+      const quizResult = await pool.query(
+        'SELECT subject, subtopic FROM quizzes WHERE id = $1',
+        [attempt.quiz_id]
+      );
+
+      if (userResult.rows.length > 0 && quizResult.rows.length > 0) {
+        const user = userResult.rows[0];
+        const quiz = quizResult.rows[0];
+        const { sendQuizCompletionEmail } = require('../utils/email');
+        await sendQuizCompletionEmail({
+          email: user.email,
+          name: user.name,
+          subject: quiz.subject || 'Quiz',
+          subtopic: quiz.subtopic || null,
+          scorePercentage,
+          correctAnswers: correctCount,
+          totalQuestions: attempt.total_questions,
+          timeTaken: timeTaken || 0,
+        });
+      }
+    } catch (emailError) {
+      // Log error but don't fail quiz submission if email fails
+      console.error(`Failed to send quiz completion email to user ${req.user.id}:`, emailError.message);
+    }
+
     // Get detailed results
     const answersResult = await pool.query(
       `SELECT 

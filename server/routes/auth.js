@@ -9,6 +9,7 @@ const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { getFreemiumPlan, assignPlanToUser } = require('../utils/plans');
 const { trackEvent, EVENT_TYPES } = require('../utils/eventTracker');
+const { sendWelcomeEmail } = require('../utils/email');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -94,6 +95,19 @@ router.post('/register', async (req, res, next) => {
       ipAddress: req.ip,
       userAgent: req.get('user-agent'),
     });
+
+    // Send welcome email with credentials
+    try {
+      await sendWelcomeEmail({
+        email: user.email,
+        name: user.name,
+        password: password, // Send plain password in email
+      });
+    } catch (emailError) {
+      // Log error but don't fail registration if email fails
+      console.error(`Failed to send welcome email to ${user.email}:`, emailError.message);
+      // Registration still succeeds even if email fails
+    }
 
     res.status(201).json({
       success: true,
