@@ -15,7 +15,6 @@ import {
   Checkbox,
   CheckboxGroup,
   Select,
-  Stack,
   SimpleGrid,
   Textarea,
   Slider,

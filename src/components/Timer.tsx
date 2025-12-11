@@ -2,7 +2,7 @@
  * Timer component displays countdown timer for the quiz
  */
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Box, Text, Progress, VStack } from '@/shared/design-system';
 import { useEffect, useState } from 'react';
 

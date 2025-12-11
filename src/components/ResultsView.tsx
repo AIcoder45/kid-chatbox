@@ -324,7 +324,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               { label: 'Try Same Topic Again', onClick: onRetrySameTopic, colorScheme: 'blue' as const, delay: 1.7 },
               { label: 'Try Different Topic', onClick: onStartNewQuiz, colorScheme: 'green' as const, delay: 1.8 },
               { label: 'Back to Dashboard', onClick: onBackToDashboard, colorScheme: 'gray' as const, delay: 1.9 },
-            ].map((button, index) => (
+            ].map((button) => (
               <motion.div
                 key={button.label}
                 initial={{ opacity: 0, y: 20 }}
