@@ -157,6 +157,127 @@ export const QuizTutor: React.FC = () => {
   }, [blocker, phase, onConfirmOpen]);
 
   /**
+   * Submit quiz and process results
+   */
+  const handleSubmitQuiz = useCallback(async () => {
+    if (phase !== 'quiz' || questions.length === 0 || isSubmittingRef.current) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
+
+    // Clear timer
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
+    // Process all answers
+    const answerResults: AnswerResult[] = questions.map((question) => {
+      const childAnswer = answers.get(question.number) || null;
+      const isCorrect = childAnswer === question.correctAnswer;
+
+      return {
+        questionNumber: question.number,
+        question: question.question,
+        childAnswer,
+        correctAnswer: question.correctAnswer,
+        explanation: question.explanation,
+        isCorrect,
+        options: question.options,
+      };
+    });
+
+    setAllAnswerResults(answerResults);
+    setPhase('loading');
+
+    const timeTaken = Math.floor((Date.now() - quizStartTime) / 1000);
+    const correctCount = answerResults.filter((r) => r.isCorrect).length;
+    const wrongCount = answerResults.filter((r) => !r.isCorrect).length;
+    const scorePercentage = Math.round((correctCount / answerResults.length) * 100);
+
+    // Save quiz result to backend
+    try {
+      const { user } = authApi.getCurrentUser();
+      if (user && config) {
+        const explanations = answerResults
+          .filter((r) => !r.isCorrect)
+          .map((r) => `Q${r.questionNumber}: ${r.explanation}`)
+          .join(' | ');
+
+        await quizApi.saveQuizResult({
+          user_id: (user as { id: string }).id,
+          timestamp: new Date().toISOString(),
+          subject: config.subject,
+          subtopic: config.subtopics.join(', '),
+          age: config.age,
+          language: config.language,
+          answers: answerResults,
+          correct_count: correctCount,
+          wrong_count: wrongCount,
+          explanation_of_mistakes: explanations,
+          time_taken: timeTaken,
+          score_percentage: scorePercentage,
+        });
+        setResultSaved(true);
+      }
+    } catch (err) {
+      // Continue even if save fails
+      console.error('Failed to save quiz result:', err);
+    }
+
+    try {
+      // Only generate AI improvement tips for AI-generated quizzes, not scheduled tests
+      if (scheduledTestId) {
+        // For scheduled tests, use simple tips without AI
+        const wrongCount = answerResults.filter((r) => !r.isCorrect).length;
+        if (wrongCount === 0) {
+          setImprovementTips(['Great job! You answered all questions correctly! 🎉']);
+        } else {
+          setImprovementTips([
+            `You got ${correctCount} out of ${answerResults.length} questions correct!`,
+            'Review the explanations to understand the correct answers.',
+            'Keep practicing to improve your score!',
+          ]);
+        }
+        setPhase('results');
+      } else {
+        // Generate AI improvement tips for AI-generated quizzes
+        const wrongAnswers = answerResults
+          .filter((r) => !r.isCorrect)
+          .map((r) => ({
+            questionNumber: r.questionNumber,
+            question: r.question,
+            childAnswer: r.childAnswer || '',
+            correctAnswer: r.correctAnswer,
+            explanation: r.explanation,
+          }));
+
+        if (config && wrongAnswers.length > 0) {
+          const tips = await generateImprovementTips(
+            wrongAnswers,
+            config.age,
+            config.language
+          );
+          setImprovementTips(tips);
+        } else {
+          setImprovementTips(['Great job! You answered all questions correctly! 🎉']);
+        }
+        setPhase('results');
+      }
+    } catch (err) {
+      // Continue to results even if tips generation fails
+      console.error('Failed to generate improvement tips:', err);
+      setPhase('results');
+    } finally {
+      // Reset submitting flag after a delay to allow navigation
+      setTimeout(() => {
+        isSubmittingRef.current = false;
+      }, 1000);
+    }
+  }, [phase, questions, answers, config, quizStartTime, scheduledTestId]);
+
+  /**
    * Handle confirmation to submit quiz and navigate
    */
   const handleConfirmLeave = useCallback(async () => {
@@ -331,124 +452,6 @@ export const QuizTutor: React.FC = () => {
     },
     [phase]
   );
-
-  const handleSubmitQuiz = useCallback(async () => {
-    if (phase !== 'quiz' || questions.length === 0 || isSubmittingRef.current) {
-      return;
-    }
-
-    isSubmittingRef.current = true;
-
-    // Clear timer
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
-
-    // Process all answers
-    const answerResults: AnswerResult[] = questions.map((question) => {
-      const childAnswer = answers.get(question.number) || null;
-      const isCorrect = childAnswer === question.correctAnswer;
-
-      return {
-        questionNumber: question.number,
-        question: question.question,
-        childAnswer,
-        correctAnswer: question.correctAnswer,
-        explanation: question.explanation,
-        isCorrect,
-        options: question.options,
-      };
-    });
-
-    setAllAnswerResults(answerResults);
-    setPhase('loading');
-
-    const timeTaken = Math.floor((Date.now() - quizStartTime) / 1000);
-    const correctCount = answerResults.filter((r) => r.isCorrect).length;
-    const wrongCount = answerResults.filter((r) => !r.isCorrect).length;
-    const scorePercentage = Math.round((correctCount / answerResults.length) * 100);
-
-    // Save quiz result to backend
-    try {
-      const { user } = authApi.getCurrentUser();
-      if (user && config) {
-        const explanations = answerResults
-          .filter((r) => !r.isCorrect)
-          .map((r) => `Q${r.questionNumber}: ${r.explanation}`)
-          .join(' | ');
-
-        await quizApi.saveQuizResult({
-          user_id: (user as { id: string }).id,
-          timestamp: new Date().toISOString(),
-          subject: config.subject,
-          subtopic: config.subtopics.join(', '),
-          age: config.age,
-          language: config.language,
-          answers: answerResults,
-          correct_count: correctCount,
-          wrong_count: wrongCount,
-          explanation_of_mistakes: explanations,
-          time_taken: timeTaken,
-          score_percentage: scorePercentage,
-        });
-        setResultSaved(true);
-      }
-    } catch (err) {
-      // Continue even if save fails
-      console.error('Failed to save quiz result:', err);
-    }
-
-    try {
-      // Only generate AI improvement tips for AI-generated quizzes, not scheduled tests
-      if (scheduledTestId) {
-        // For scheduled tests, use simple tips without AI
-        const wrongCount = answerResults.filter((r) => !r.isCorrect).length;
-        if (wrongCount === 0) {
-          setImprovementTips(['Great job! You answered all questions correctly! 🎉']);
-        } else {
-          setImprovementTips([
-            `You got ${correctCount} out of ${answerResults.length} questions correct!`,
-            'Review the explanations to understand the correct answers.',
-            'Keep practicing to improve your score!',
-          ]);
-        }
-        setPhase('results');
-      } else {
-        // Generate AI improvement tips for AI-generated quizzes
-        const wrongAnswers = answerResults
-          .filter((r) => !r.isCorrect)
-          .map((r) => ({
-            questionNumber: r.questionNumber,
-            question: r.question,
-            childAnswer: r.childAnswer || '',
-            correctAnswer: r.correctAnswer,
-            explanation: r.explanation,
-          }));
-
-        if (config && wrongAnswers.length > 0) {
-          const tips = await generateImprovementTips(
-            wrongAnswers,
-            config.age,
-            config.language
-          );
-          setImprovementTips(tips);
-        } else {
-          setImprovementTips(['Great job! You answered all questions correctly! 🎉']);
-        }
-        setPhase('results');
-      }
-    } catch (err) {
-      // Continue to results even if tips generation fails
-      console.error('Failed to generate improvement tips:', err);
-      setPhase('results');
-    } finally {
-      // Reset submitting flag after a delay to allow navigation
-      setTimeout(() => {
-        isSubmittingRef.current = false;
-      }, 1000);
-    }
-  }, [phase, questions, answers, config, quizStartTime, scheduledTestId]);
 
   const handleStartNewQuiz = useCallback(() => {
     navigate('/quiz');
