@@ -16,6 +16,8 @@ import {
   MenuItem,
   IconButton,
   Tooltip,
+  useColorMode,
+  useColorModeValue,
 } from '@/shared/design-system';
 import { authApi } from '@/services/api';
 import { User } from '@/types';
@@ -32,6 +34,11 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { fontSize, increaseFontSize, decreaseFontSize, resetFontSize } = useFontSize();
+  const { colorMode, toggleColorMode } = useColorMode();
+  const headerBg = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const fontControlBg = useColorModeValue('gray.100', 'gray.700');
+  const headingColor = useColorModeValue('blue.600', 'blue.400');
 
   const handleLogout = () => {
     authApi.logout();
@@ -55,50 +62,67 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
   return (
     <Box
       as="header"
-      bg="white"
+      bg={headerBg}
       boxShadow="sm"
       borderBottomWidth={1}
-      borderBottomColor="gray.200"
-      paddingY={3}
-      paddingX={6}
+      borderBottomColor={borderColor}
       position="sticky"
       top={0}
       zIndex={1000}
     >
-      <HStack justifyContent="space-between" alignItems="center">
-        {/* Left: Navigation */}
-        <HStack spacing={4}>
+      <Box maxWidth="1400px" margin="0 auto">
+        <Box paddingY={{ base: 2, md: 3 }} paddingX={{ base: 4, md: 6 }}>
+          <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={{ base: 2, md: 4 }}>
+          {/* Left: Logo/Title - Aligned with Dashboard content */}
+          <Heading
+            size={{ base: 'sm', md: 'md' }}
+            color={headingColor}
+            cursor="pointer"
+            onClick={handleGoHome}
+            flex={{ base: 1, md: 'none' }}
+            textAlign={{ base: 'center', md: 'left' }}
+          >
+            🎓 Guru AI
+          </Heading>
+
+          {/* Right: Navigation and Controls */}
+          <HStack spacing={{ base: 2, md: 4 }} flexWrap="wrap" ml="auto">
+          {/* Navigation Buttons */}
           {canGoBack && !isHomePage && (
             <Button
               variant="ghost"
-              size="sm"
+              size={{ base: 'xs', md: 'sm' }}
               onClick={handleGoBack}
               leftIcon={<Text>←</Text>}
             >
-              Back
+              <Text display={{ base: 'none', sm: 'block' }}>Back</Text>
             </Button>
           )}
           {!isHomePage && (
             <Button
               variant="ghost"
-              size="sm"
+              size={{ base: 'xs', md: 'sm' }}
               onClick={handleGoHome}
               leftIcon={<Text>🏠</Text>}
             >
-              Home
+              <Text display={{ base: 'none', sm: 'block' }}>Home</Text>
             </Button>
           )}
-        </HStack>
 
-        {/* Center: Logo/Title */}
-        <Heading size="md" color="blue.600" cursor="pointer" onClick={handleGoHome}>
-          📚 Kid Chatbox
-        </Heading>
+          {/* Font Controls, Dark Mode Toggle, User Menu, and Logout */}
+          {/* Dark Mode Toggle */}
+          <Tooltip label={colorMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <IconButton
+              aria-label="Toggle dark mode"
+              icon={<Text fontSize="md">{colorMode === 'dark' ? '☀️' : '🌙'}</Text>}
+              size="sm"
+              variant="ghost"
+              onClick={toggleColorMode}
+            />
+          </Tooltip>
 
-        {/* Right: Font Controls and User Menu */}
-        <HStack spacing={2}>
           {/* Font Size Controls */}
-          <HStack spacing={1} bg="gray.100" borderRadius="md" padding={1}>
+          <HStack spacing={1} bg={fontControlBg} borderRadius="md" padding={1} display={{ base: 'none', sm: 'flex' }}>
             <Tooltip label="Decrease font size">
               <IconButton
                 aria-label="Decrease font size"
@@ -134,34 +158,44 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
           </HStack>
 
           {user ? (
-            <Menu>
-              <MenuButton
-                as={Button}
-                variant="ghost"
-                size="sm"
-                leftIcon={<Avatar size="xs" name={user.name} />}
+            <>
+              <Menu>
+                <MenuButton
+                  as={Button}
+                  variant="ghost"
+                  size={{ base: 'xs', md: 'sm' }}
+                  leftIcon={<Avatar size="xs" name={user.name} />}
+                >
+                  <Text display={{ base: 'none', md: 'block' }}>{user.name}</Text>
+                </MenuButton>
+                <MenuList>
+                  <MenuItem onClick={handleGoHome}>Dashboard</MenuItem>
+                  <MenuItem onClick={() => navigate('/study')}>AI Study Mode</MenuItem>
+                  <MenuItem onClick={() => navigate('/quiz')}>AI Quiz Mode</MenuItem>
+                  <MenuItem onClick={() => navigate('/study-history')}>Study History</MenuItem>
+                  <MenuItem onClick={() => navigate('/quiz-history')}>Quiz History</MenuItem>
+                  <MenuItem onClick={() => navigate('/profile')}>My Profile</MenuItem>
+                </MenuList>
+              </Menu>
+              <Button
+                colorScheme="red"
+                variant="outline"
+                size={{ base: 'xs', md: 'sm' }}
+                onClick={handleLogout}
               >
-                <Text display={{ base: 'none', md: 'block' }}>{user.name}</Text>
-              </MenuButton>
-              <MenuList>
-                <MenuItem onClick={handleGoHome}>Dashboard</MenuItem>
-                <MenuItem onClick={() => navigate('/study')}>Study Mode</MenuItem>
-                <MenuItem onClick={() => navigate('/quiz')}>Quiz Mode</MenuItem>
-                <MenuItem onClick={() => navigate('/study-history')}>Study History</MenuItem>
-                <MenuItem onClick={() => navigate('/quiz-history')}>Quiz History</MenuItem>
-                <MenuItem onClick={() => navigate('/profile')}>My Profile</MenuItem>
-                <MenuItem onClick={handleLogout} color="red.600">
-                  Logout
-                </MenuItem>
-              </MenuList>
-            </Menu>
+                <Text display={{ base: 'none', sm: 'block' }}>Logout</Text>
+                <Text display={{ base: 'block', sm: 'none' }}>🚪</Text>
+              </Button>
+            </>
           ) : (
-            <Button size="sm" colorScheme="blue" onClick={() => navigate('/login')}>
+            <Button size={{ base: 'xs', md: 'sm' }} colorScheme="blue" onClick={() => navigate('/login')}>
               Login
             </Button>
           )}
         </HStack>
-      </HStack>
+        </HStack>
+        </Box>
+      </Box>
     </Box>
   );
 };

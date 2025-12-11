@@ -30,7 +30,7 @@ export const LOGIN_CONSTANTS = {
 } as const;
 
 export const REGISTER_CONSTANTS = {
-  BRAND_NAME: 'Kid Chatbox',
+  BRAND_NAME: 'GuruAI',
   BRAND_LOGO: '📚',
   WELCOME_TITLE: 'Create Account',
   WELCOME_SUBTITLE: 'Join us and start your learning adventure',

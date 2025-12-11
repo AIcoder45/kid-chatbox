@@ -3,11 +3,12 @@
  */
 
 export const APP_CONSTANTS = {
-  APP_NAME: 'KidChatbox',
+  APP_NAME: 'GuruAI',
   BRAND_NAME: 'GuruAI',
   MIN_AGE: 6,
   MAX_AGE: 14,
   DEFAULT_QUIZ_QUESTIONS: 15,
+  GOOGLE_ANALYTICS_ID: import.meta.env.VITE_GOOGLE_ANALYTICS_ID || '',
 } as const;
 
 export const API_ENDPOINTS = {
@@ -30,8 +31,8 @@ export const API_ENDPOINTS = {
 export const MESSAGES = {
   WELCOME: 'Welcome back! 👋',
   DASHBOARD_GREETING: 'Hello! What would you like to do today?',
-  STUDY_MODE_TITLE: 'Study Mode 📚',
-  QUIZ_MODE_TITLE: 'Quiz Mode 🎯',
+  STUDY_MODE_TITLE: 'AI Study Mode 📚',
+  QUIZ_MODE_TITLE: 'AI Quiz Mode 🎯',
   LAST_SCORES: 'Your Recent Scores',
   SUGGESTED_TOPICS: 'Suggested Topics to Improve',
   MOTIVATIONAL: 'Keep practicing! You\'re doing great! 🌟',

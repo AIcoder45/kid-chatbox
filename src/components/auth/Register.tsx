@@ -169,7 +169,7 @@ export const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onSwitchT
                     setFormData({ ...formData, preferredLanguage: value as Language })
                   }
                 >
-                  <Stack direction="row" spacing={4}>
+                  <Stack direction={{ base: 'column', sm: 'row' }} spacing={4}>
                     {Object.values(LANGUAGES).map((lang) => (
                       <Radio key={lang} value={lang} size="md">
                         {lang}

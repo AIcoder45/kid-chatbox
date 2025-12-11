@@ -5,6 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kid Chatbox - AI Quiz Tutor</title>
+    <script>
+      // Prevent flash of wrong theme
+      (function() {
+        const colorMode = localStorage.getItem('chakra-ui-color-mode') || 'light';
+        if (colorMode === 'dark') {
+          document.documentElement.classList.add('chakra-ui-dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

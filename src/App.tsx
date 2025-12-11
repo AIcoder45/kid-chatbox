@@ -5,30 +5,77 @@
 import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Login } from '@/components/auth/Login';
-import { Register } from '@/components/auth/Register';
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { ModuleAccessGuard } from '@/components/ModuleAccessGuard';
 import { Dashboard } from '@/components/Dashboard';
 import { StudyMode } from '@/components/StudyMode';
 import { QuizTutor } from '@/components/QuizTutor';
 import { QuizHistory } from '@/components/QuizHistory';
 import { StudyHistory } from '@/components/StudyHistory';
+import { StudyLibrary } from '@/components/StudyLibrary';
+import { StudyLibraryViewer } from '@/components/StudyLibraryViewer';
 import { Profile } from '@/components/Profile';
-import { Layout } from '@/components/layout/Layout';
+import { ScheduledTests } from '@/components/ScheduledTests';
+import { StudentLayout } from '@/components/layout/StudentLayout';
 import { Home } from '@/components/Home';
+import { AdminLayout } from '@/components/admin/AdminLayout';
+import { AdminGuard } from '@/components/admin/AdminGuard';
+import { AdminDashboard } from '@/components/admin/AdminDashboard';
+import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
+import { UserManagement } from '@/components/admin/UserManagement';
+import { PlanManagement } from '@/components/admin/PlanManagement';
+import { TopicManagement } from '@/components/admin/TopicManagement';
+import { QuizManagement } from '@/components/admin/QuizManagement';
+import { QuizHistoryManagement } from '@/components/admin/QuizHistoryManagement';
+import { StudyLibraryContentManagement } from '@/components/admin/StudyLibraryContentManagement';
 import { authApi } from '@/services/api';
 import { User } from '@/types';
 
+/**
+ * Theme configuration with dark mode support
+ */
 const theme = extendTheme({
   config: {
     initialColorMode: 'light',
     useSystemColorMode: false,
   },
   styles: {
-    global: {
+    global: (props: { colorMode: string }) => ({
       body: {
-        bg: 'gray.50',
+        bg: props.colorMode === 'dark' ? 'gray.900' : 'gray.50',
+        color: props.colorMode === 'dark' ? 'whiteAlpha.900' : 'gray.800',
       },
+    }),
+  },
+  colors: {
+    gray: {
+      50: '#F7FAFC',
+      100: '#EDF2F7',
+      200: '#E2E8F0',
+      300: '#CBD5E0',
+      400: '#A0AEC0',
+      500: '#718096',
+      600: '#4A5568',
+      700: '#2D3748',
+      800: '#1A202C',
+      900: '#171923',
+    },
+  },
+  components: {
+    Card: {
+      baseStyle: (props: { colorMode: string }) => ({
+        container: {
+          bg: props.colorMode === 'dark' ? 'gray.800' : 'white',
+          color: props.colorMode === 'dark' ? 'whiteAlpha.900' : 'gray.800',
+        },
+      }),
+    },
+    Button: {
+      baseStyle: (props: { colorMode: string }) => ({
+        _hover: {
+          bg: props.colorMode === 'dark' ? 'gray.700' : 'gray.100',
+        },
+      }),
     },
   },
 });
@@ -66,12 +113,7 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleLoginSuccess = () => {
-    const { user: currentUser } = authApi.getCurrentUser();
-    setUser(currentUser as User);
-  };
-
-  const handleRegisterSuccess = () => {
+  const handleAuthSuccess = () => {
     const { user: currentUser } = authApi.getCurrentUser();
     setUser(currentUser as User);
   };
@@ -86,7 +128,13 @@ export const App: React.FC = () => {
         <Routes>
           <Route
             path="/"
-            element={<Home />}
+            element={
+              user ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <Home onAuthSuccess={handleAuthSuccess} />
+              )
+            }
           />
           <Route
             path="/login"
@@ -94,10 +142,7 @@ export const App: React.FC = () => {
               user ? (
                 <Navigate to="/dashboard" replace />
               ) : (
-                <Login
-                  onLoginSuccess={handleLoginSuccess}
-                  onSwitchToRegister={() => window.location.href = '/register'}
-                />
+                <Navigate to="/?auth=login" replace />
               )
             }
           />
@@ -107,10 +152,7 @@ export const App: React.FC = () => {
               user ? (
                 <Navigate to="/dashboard" replace />
               ) : (
-                <Register
-                  onRegisterSuccess={handleRegisterSuccess}
-                  onSwitchToLogin={() => window.location.href = '/login'}
-                />
+                <Navigate to="/?auth=register" replace />
               )
             }
           />
@@ -118,9 +160,9 @@ export const App: React.FC = () => {
             path="/dashboard"
             element={
               <AuthGuard>
-                <Layout user={user}>
+                <StudentLayout user={user}>
                   {user && <Dashboard user={user} />}
-                </Layout>
+                </StudentLayout>
               </AuthGuard>
             }
           />
@@ -128,9 +170,11 @@ export const App: React.FC = () => {
             path="/study"
             element={
               <AuthGuard>
-                <Layout user={user}>
-                  <StudyMode />
-                </Layout>
+                <ModuleAccessGuard module="study">
+                  <StudentLayout user={user}>
+                    <StudyMode />
+                  </StudentLayout>
+                </ModuleAccessGuard>
               </AuthGuard>
             }
           />
@@ -138,9 +182,11 @@ export const App: React.FC = () => {
             path="/quiz"
             element={
               <AuthGuard>
-                <Layout user={user}>
-                  <QuizTutor />
-                </Layout>
+                <ModuleAccessGuard module="quiz">
+                  <StudentLayout user={user}>
+                    <QuizTutor />
+                  </StudentLayout>
+                </ModuleAccessGuard>
               </AuthGuard>
             }
           />
@@ -148,9 +194,9 @@ export const App: React.FC = () => {
             path="/profile"
             element={
               <AuthGuard>
-                <Layout user={user}>
+                <StudentLayout user={user}>
                   {user && <Profile user={user} />}
-                </Layout>
+                </StudentLayout>
               </AuthGuard>
             }
           />
@@ -158,9 +204,9 @@ export const App: React.FC = () => {
             path="/quiz-history"
             element={
               <AuthGuard>
-                <Layout user={user}>
+                <StudentLayout user={user}>
                   <QuizHistory />
-                </Layout>
+                </StudentLayout>
               </AuthGuard>
             }
           />
@@ -168,10 +214,125 @@ export const App: React.FC = () => {
             path="/study-history"
             element={
               <AuthGuard>
-                <Layout user={user}>
+                <StudentLayout user={user}>
                   <StudyHistory />
-                </Layout>
+                </StudentLayout>
               </AuthGuard>
+            }
+          />
+          <Route
+            path="/study-library"
+            element={
+              <AuthGuard>
+                <ModuleAccessGuard module="study">
+                  <StudentLayout user={user}>
+                    <StudyLibrary />
+                  </StudentLayout>
+                </ModuleAccessGuard>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/study-library/:id"
+            element={
+              <AuthGuard>
+                <ModuleAccessGuard module="study">
+                  <StudentLayout user={user}>
+                    <StudyLibraryViewer />
+                  </StudentLayout>
+                </ModuleAccessGuard>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/scheduled-tests"
+            element={
+              <AuthGuard>
+                <StudentLayout user={user}>
+                  <ScheduledTests />
+                </StudentLayout>
+              </AuthGuard>
+            }
+          />
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <AdminGuard>
+                <AdminLayout>
+                  <AdminDashboard />
+                </AdminLayout>
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminGuard>
+                <AdminLayout>
+                  <UserManagement />
+                </AdminLayout>
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="/admin/plans"
+            element={
+              <AdminGuard>
+                <AdminLayout>
+                  <PlanManagement />
+                </AdminLayout>
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="/admin/topics"
+            element={
+              <AdminGuard>
+                <AdminLayout>
+                  <TopicManagement />
+                </AdminLayout>
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="/admin/quizzes"
+            element={
+              <AdminGuard>
+                <AdminLayout>
+                  <QuizManagement />
+                </AdminLayout>
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <AdminGuard>
+                <AdminLayout>
+                  <AnalyticsDashboard />
+                </AdminLayout>
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="/admin/quiz-history"
+            element={
+              <AdminGuard>
+                <AdminLayout>
+                  <QuizHistoryManagement />
+                </AdminLayout>
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="/admin/study-library-content"
+            element={
+              <AdminGuard>
+                <AdminLayout>
+                  <StudyLibraryContentManagement />
+                </AdminLayout>
+              </AdminGuard>
             }
           />
         </Routes>

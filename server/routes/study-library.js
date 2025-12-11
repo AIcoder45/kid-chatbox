@@ -1,0 +1,387 @@
+/**
+ * Study Library API routes
+ * Handles fetching shared study materials that students can browse
+ */
+
+const express = require('express');
+const { pool } = require('../config/database');
+const { authenticateToken } = require('../middleware/auth');
+const { checkModuleAccess } = require('../middleware/rbac');
+
+const router = express.Router();
+
+// All routes require authentication and study module access
+router.use(authenticateToken);
+router.use(checkModuleAccess('study'));
+
+/**
+ * Get shared study sessions (study library)
+ * GET /api/study-library?search=keyword&subject=math&age=10&difficulty=easy&limit=20&offset=0
+ */
+router.get('/', async (req, res, next) => {
+  try {
+    const {
+      search,
+      subject,
+      age,
+      difficulty,
+      language,
+      limit = 20,
+      offset = 0,
+      sortBy = 'timestamp', // timestamp, popularity
+    } = req.query;
+
+    let query = `
+      SELECT 
+        ss.id,
+        ss.timestamp,
+        ss.subject,
+        ss.topic,
+        ss.age,
+        ss.language,
+        ss.difficulty,
+        ss.lesson_title,
+        ss.lesson_introduction,
+        ss.lesson_summary,
+        u.name as created_by_name,
+        u.id as created_by_id,
+        COUNT(DISTINCT al.user_id) FILTER (WHERE al.action = 'view_study_session' AND al.resource_id = ss.id) as view_count
+      FROM study_sessions ss
+      INNER JOIN users u ON ss.user_id = u.id
+      LEFT JOIN activity_logs al ON al.resource_type = 'study_session' AND al.resource_id = ss.id
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramCount = 0;
+
+    // Search filter
+    if (search) {
+      paramCount++;
+      query += ` AND (
+        ss.topic ILIKE $${paramCount} OR 
+        ss.lesson_title ILIKE $${paramCount} OR
+        ss.subject ILIKE $${paramCount}
+      )`;
+      params.push(`%${search}%`);
+    }
+
+    // Subject filter
+    if (subject) {
+      paramCount++;
+      query += ` AND ss.subject = $${paramCount}`;
+      params.push(subject);
+    }
+
+    // Age filter
+    if (age) {
+      paramCount++;
+      query += ` AND ss.age = $${paramCount}`;
+      params.push(parseInt(age));
+    }
+
+    // Difficulty filter
+    if (difficulty) {
+      paramCount++;
+      query += ` AND ss.difficulty = $${paramCount}`;
+      params.push(difficulty);
+    }
+
+    // Language filter
+    if (language) {
+      paramCount++;
+      query += ` AND ss.language = $${paramCount}`;
+      params.push(language);
+    }
+
+    query += ` GROUP BY ss.id, u.name, u.id`;
+
+    // Sorting
+    if (sortBy === 'popularity') {
+      query += ` ORDER BY view_count DESC, ss.timestamp DESC`;
+    } else {
+      query += ` ORDER BY ss.timestamp DESC`;
+    }
+
+    // Pagination
+    paramCount++;
+    query += ` LIMIT $${paramCount}`;
+    params.push(parseInt(limit));
+
+    paramCount++;
+    query += ` OFFSET $${paramCount}`;
+    params.push(parseInt(offset));
+
+    const result = await pool.query(query, params);
+
+    // Get total count for pagination
+    let countQuery = `
+      SELECT COUNT(DISTINCT ss.id) as total
+      FROM study_sessions ss
+      WHERE 1=1
+    `;
+    const countParams = [];
+    let countParamCount = 0;
+
+    if (search) {
+      countParamCount++;
+      countQuery += ` AND (
+        ss.topic ILIKE $${countParamCount} OR 
+        ss.lesson_title ILIKE $${countParamCount} OR
+        ss.subject ILIKE $${countParamCount}
+      )`;
+      countParams.push(`%${search}%`);
+    }
+
+    if (subject) {
+      countParamCount++;
+      countQuery += ` AND ss.subject = $${countParamCount}`;
+      countParams.push(subject);
+    }
+
+    if (age) {
+      countParamCount++;
+      countQuery += ` AND ss.age = $${countParamCount}`;
+      countParams.push(parseInt(age));
+    }
+
+    if (difficulty) {
+      countParamCount++;
+      countQuery += ` AND ss.difficulty = $${countParamCount}`;
+      countParams.push(difficulty);
+    }
+
+    if (language) {
+      countParamCount++;
+      countQuery += ` AND ss.language = $${countParamCount}`;
+      countParams.push(language);
+    }
+
+    const countResult = await pool.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].total);
+
+    // Also fetch published admin-created study library content
+    let contentQuery = `
+      SELECT 
+        slc.id,
+        slc.title,
+        slc.description,
+        slc.content_type as "contentType",
+        slc.file_url as "fileUrl",
+        slc.file_name as "fileName",
+        slc.file_size as "fileSize",
+        slc.text_content as "textContent",
+        slc.subject,
+        slc.age_group as "ageGroup",
+        slc.difficulty,
+        slc.language,
+        slc.publish_date as "publishDate",
+        slc.view_count as "viewCount",
+        slc.created_at as "createdAt",
+        u.name as created_by_name,
+        'admin_content' as content_source
+      FROM study_library_content slc
+      LEFT JOIN users u ON slc.created_by = u.id
+      WHERE slc.is_published = true
+        AND (slc.publish_date IS NULL OR slc.publish_date <= CURRENT_TIMESTAMP)
+    `;
+    const contentParams = [];
+    let contentParamCount = 0;
+
+    if (subject) {
+      contentParamCount++;
+      contentQuery += ` AND slc.subject ILIKE $${contentParamCount}`;
+      contentParams.push(`%${subject}%`);
+    }
+
+    if (age) {
+      contentParamCount++;
+      contentQuery += ` AND slc.age_group LIKE $${contentParamCount}`;
+      contentParams.push(`%${age}%`);
+    }
+
+    if (difficulty) {
+      contentParamCount++;
+      contentQuery += ` AND LOWER(slc.difficulty) = LOWER($${contentParamCount})`;
+      contentParams.push(difficulty);
+    }
+
+    if (language) {
+      contentParamCount++;
+      contentQuery += ` AND slc.language = $${contentParamCount}`;
+      contentParams.push(language);
+    }
+
+    if (search) {
+      contentParamCount++;
+      contentQuery += ` AND (
+        slc.title ILIKE $${contentParamCount} OR 
+        slc.description ILIKE $${contentParamCount} OR
+        slc.subject ILIKE $${contentParamCount}
+      )`;
+      contentParams.push(`%${search}%`);
+    }
+
+    contentQuery += ` ORDER BY slc.created_at DESC LIMIT $${++contentParamCount} OFFSET $${++contentParamCount}`;
+    contentParams.push(parseInt(limit), parseInt(offset));
+
+    const contentResult = await pool.query(contentQuery, contentParams);
+
+    // Parse JSON fields
+    const sessions = result.rows.map((row) => ({
+      ...row,
+      lesson_explanation:
+        typeof row.lesson_explanation === 'string'
+          ? JSON.parse(row.lesson_explanation)
+          : row.lesson_explanation,
+      lesson_key_points:
+        typeof row.lesson_key_points === 'string'
+          ? JSON.parse(row.lesson_key_points)
+          : row.lesson_key_points,
+      lesson_examples:
+        typeof row.lesson_examples === 'string'
+          ? JSON.parse(row.lesson_examples)
+          : row.lesson_examples,
+    }));
+
+    // Combine study sessions and admin content
+    const adminContent = contentResult.rows.map((row) => ({
+      id: `admin_${row.id}`,
+      title: row.title,
+      lesson_title: row.title,
+      topic: row.subject || 'General',
+      subject: row.subject || '',
+      age: row.ageGroup ? parseInt(row.ageGroup.split('-')[0]) : null,
+      difficulty: row.difficulty || '',
+      language: row.language || 'English',
+      lesson_summary: row.description || '',
+      created_by_name: row.created_by_name || 'Admin',
+      view_count: row.viewCount || 0,
+      timestamp: row.createdAt || row.publishDate,
+      content_source: 'admin_content',
+      contentType: row.contentType,
+      fileUrl: row.fileUrl,
+      fileName: row.fileName,
+      fileSize: row.fileSize,
+      textContent: row.textContent,
+    }));
+
+    // Merge and sort by timestamp
+    const allContent = [...sessions, ...adminContent].sort((a, b) => {
+      const dateA = new Date(a.timestamp).getTime();
+      const dateB = new Date(b.timestamp).getTime();
+      return dateB - dateA; // Newest first
+    });
+
+    res.json({
+      success: true,
+      sessions: allContent,
+      pagination: {
+        total: total + contentResult.rows.length,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        pages: Math.ceil((total + contentResult.rows.length) / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Get popular study sessions
+ * GET /api/study-library/popular?limit=10
+ * NOTE: This must come BEFORE /:id route to avoid matching "popular" as an ID
+ */
+router.get('/popular', async (req, res, next) => {
+  try {
+    const { limit = 10 } = req.query;
+
+    const result = await pool.query(
+      `SELECT 
+        ss.id,
+        ss.topic,
+        ss.lesson_title,
+        ss.subject,
+        ss.difficulty,
+        ss.age,
+        COUNT(DISTINCT al.user_id) FILTER (WHERE al.action = 'view_study_session') as view_count
+      FROM study_sessions ss
+      LEFT JOIN activity_logs al ON al.resource_type = 'study_session' AND al.resource_id = ss.id
+      GROUP BY ss.id
+      ORDER BY view_count DESC
+      LIMIT $1`,
+      [parseInt(limit)]
+    );
+
+    res.json({
+      success: true,
+      sessions: result.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Get study session by ID
+ * GET /api/study-library/:id
+ */
+router.get('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `SELECT 
+        ss.*,
+        u.name as created_by_name,
+        u.id as created_by_id
+      FROM study_sessions ss
+      INNER JOIN users u ON ss.user_id = u.id
+      WHERE ss.id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Study session not found',
+      });
+    }
+
+    const session = result.rows[0];
+
+    // Record view in activity_logs
+    await pool.query(
+      `INSERT INTO activity_logs (user_id, action, resource_type, resource_id)
+       VALUES ($1, 'view_study_session', 'study_session', $2)`,
+      [req.user.id, id]
+    );
+
+    // Parse JSON fields
+    const parsedSession = {
+      ...session,
+      lesson_explanation:
+        typeof session.lesson_explanation === 'string'
+          ? JSON.parse(session.lesson_explanation)
+          : session.lesson_explanation,
+      lesson_key_points:
+        typeof session.lesson_key_points === 'string'
+          ? JSON.parse(session.lesson_key_points)
+          : session.lesson_key_points,
+      lesson_examples:
+        typeof session.lesson_examples === 'string'
+          ? JSON.parse(session.lesson_examples)
+          : session.lesson_examples,
+    };
+
+    res.json({
+      success: true,
+      session: parsedSession,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+module.exports = router;
+

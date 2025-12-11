@@ -223,17 +223,32 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       )}
 
       <VStack spacing={3} width="100%">
-        <Text fontSize="md" fontWeight="semibold">
+        <Text fontSize={{ base: 'sm', md: 'md' }} fontWeight="semibold">
           {MESSAGES.ANOTHER_QUIZ}
         </Text>
-        <Box display="flex" gap={4} flexWrap="wrap" justifyContent="center">
-          <Button colorScheme="blue" size="lg" onClick={onRetrySameTopic}>
+        <Box display="flex" gap={4} flexWrap="wrap" justifyContent="center" w="100%">
+          <Button
+            colorScheme="blue"
+            size={{ base: 'md', md: 'lg' }}
+            onClick={onRetrySameTopic}
+            w={{ base: '100%', sm: 'auto' }}
+          >
             Try Same Topic Again
           </Button>
-          <Button colorScheme="green" size="lg" onClick={onStartNewQuiz}>
+          <Button
+            colorScheme="green"
+            size={{ base: 'md', md: 'lg' }}
+            onClick={onStartNewQuiz}
+            w={{ base: '100%', sm: 'auto' }}
+          >
             Try Different Topic
           </Button>
-          <Button colorScheme="gray" size="lg" onClick={onBackToDashboard}>
+          <Button
+            colorScheme="gray"
+            size={{ base: 'md', md: 'lg' }}
+            onClick={onBackToDashboard}
+            w={{ base: '100%', sm: 'auto' }}
+          >
             Back to Dashboard
           </Button>
         </Box>

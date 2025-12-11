@@ -24,9 +24,21 @@ const authenticateToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Get user from database
+    // Get user from database with roles and permissions
     const result = await pool.query(
-      'SELECT id, email, name, age, grade, preferred_language FROM users WHERE id = $1',
+      `SELECT 
+        u.id, 
+        u.email, 
+        u.name, 
+        u.age, 
+        u.grade, 
+        u.preferred_language,
+        u.status,
+        u.avatar_url,
+        u.age_group,
+        u.last_login
+      FROM users u 
+      WHERE u.id = $1`,
       [decoded.userId]
     );
 
@@ -37,7 +49,33 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    req.user = result.rows[0];
+    const user = result.rows[0];
+
+    // Get user roles
+    const rolesResult = await pool.query(
+      `SELECT r.name 
+       FROM roles r
+       INNER JOIN user_roles ur ON r.id = ur.role_id
+       WHERE ur.user_id = $1`,
+      [user.id]
+    );
+
+    // Get user permissions
+    const permissionsResult = await pool.query(
+      `SELECT DISTINCT p.name 
+       FROM permissions p
+       INNER JOIN role_permissions rp ON p.id = rp.permission_id
+       INNER JOIN user_roles ur ON rp.role_id = ur.role_id
+       WHERE ur.user_id = $1`,
+      [user.id]
+    );
+
+    req.user = {
+      ...user,
+      roles: rolesResult.rows.map((r) => r.name),
+      permissions: permissionsResult.rows.map((p) => p.name),
+    };
+
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

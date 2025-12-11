@@ -31,3 +31,6 @@ export { MESSAGES as QUIZ_MESSAGES } from './quiz';
 // Export study constants
 export * from './study';
 
+// Export topic constants
+export * from './topics';
+

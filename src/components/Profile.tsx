@@ -123,9 +123,9 @@ export const Profile: React.FC<ProfileProps> = ({ user: initialUser }) => {
   }
 
   return (
-    <Box padding={6} maxWidth="600px" margin="0 auto">
-      <VStack spacing={6} align="stretch">
-        <Heading size="lg" color="blue.600">
+    <Box padding={{ base: 4, md: 6 }} maxWidth="600px" margin="0 auto">
+      <VStack spacing={{ base: 4, md: 6 }} align="stretch">
+        <Heading size={{ base: 'md', md: 'lg' }} color="blue.600">
           My Profile 👤
         </Heading>
 
@@ -223,11 +223,19 @@ export const Profile: React.FC<ProfileProps> = ({ user: initialUser }) => {
                   </Text>
                 </FormControl>
 
-                <HStack spacing={4} justifyContent="flex-end" marginTop={4}>
+                <HStack
+                  spacing={4}
+                  justifyContent="flex-end"
+                  marginTop={4}
+                  flexWrap="wrap"
+                  w="100%"
+                >
                   <Button
                     variant="outline"
                     onClick={() => navigate('/dashboard')}
                     isDisabled={loading}
+                    size={{ base: 'sm', md: 'md' }}
+                    w={{ base: '100%', sm: 'auto' }}
                   >
                     Cancel
                   </Button>
@@ -236,6 +244,8 @@ export const Profile: React.FC<ProfileProps> = ({ user: initialUser }) => {
                     colorScheme="blue"
                     isLoading={loading}
                     isDisabled={loading}
+                    size={{ base: 'sm', md: 'md' }}
+                    w={{ base: '100%', sm: 'auto' }}
                   >
                     Save Changes
                   </Button>

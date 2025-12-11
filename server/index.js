@@ -2,15 +2,36 @@
  * Express server for KidChatbox API
  */
 
+// Suppress deprecation warnings from dependencies
+process.removeAllListeners('warning');
+process.on('warning', (warning) => {
+  // Only suppress util._extend deprecation warnings
+  if (warning.name === 'DeprecationWarning' && warning.message.includes('util._extend')) {
+    return; // Suppress this specific warning
+  }
+  // Show other warnings
+  console.warn(warning.name, warning.message);
+});
+
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const authRoutes = require('./routes/auth');
 const quizRoutes = require('./routes/quiz');
+const quizzesRoutes = require('./routes/quizzes');
 const studyRoutes = require('./routes/study');
 const analyticsRoutes = require('./routes/analytics');
 const profileRoutes = require('./routes/profile');
+const adminRoutes = require('./routes/admin');
+const adminAnalyticsRoutes = require('./routes/admin-analytics');
+const topicsRoutes = require('./routes/topics');
+const studyMaterialRoutes = require('./routes/study-material');
+const studyLibraryRoutes = require('./routes/study-library');
+const studyLibraryContentRoutes = require('./routes/study-library-content');
+const plansRoutes = require('./routes/plans');
+const scheduledTestsRoutes = require('./routes/scheduled-tests');
+const publicRoutes = require('./routes/public');
 const { initializeDatabase } = require('./config/database');
 
 dotenv.config();
@@ -48,6 +69,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -56,10 +81,20 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/quiz', quizRoutes);
+app.use('/api/quiz', quizRoutes); // Legacy quiz routes
+app.use('/api/quizzes', quizzesRoutes); // New quiz management routes
 app.use('/api/study', studyRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin/analytics', adminAnalyticsRoutes);
+app.use('/api/topics', topicsRoutes);
+app.use('/api/study-material', studyMaterialRoutes);
+app.use('/api/study-library', studyLibraryRoutes);
+app.use('/api/admin/study-library-content', studyLibraryContentRoutes);
+app.use('/api/plans', plansRoutes);
+app.use('/api/scheduled-tests', scheduledTestsRoutes);
+app.use('/api/public', publicRoutes);
 
 // Serve static files from React app in production
 if (NODE_ENV === 'production') {

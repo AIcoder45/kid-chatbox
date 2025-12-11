@@ -41,7 +41,7 @@ export const AllQuestionsView: React.FC<AllQuestionsViewProps> = ({
                   Q{question.number}. {question.question}
                 </Text>
 
-                <HStack spacing={2} flexWrap="wrap">
+                <HStack spacing={2} flexWrap="wrap" w="100%">
                   {options.map((option) => {
                     const isSelected = selectedAnswer === option.key;
                     return (
@@ -50,8 +50,12 @@ export const AllQuestionsView: React.FC<AllQuestionsViewProps> = ({
                         onClick={() => onAnswerSelect(question.number, option.key)}
                         colorScheme={isSelected ? 'blue' : 'gray'}
                         variant={isSelected ? 'solid' : 'outline'}
-                        size="md"
-                        minWidth="120px"
+                        size={{ base: 'sm', md: 'md' }}
+                        minWidth={{ base: '100%', sm: '120px' }}
+                        flex={{ base: '1 1 100%', sm: '0 1 auto' }}
+                        whiteSpace="normal"
+                        height="auto"
+                        py={2}
                       >
                         {option.key}) {option.value}
                       </Button>

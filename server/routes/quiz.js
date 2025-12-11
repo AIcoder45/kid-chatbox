@@ -5,13 +5,14 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { checkModuleAccess } = require('../middleware/rbac');
 
 const router = express.Router();
 
 /**
  * Save quiz result
  */
-router.post('/results', authenticateToken, async (req, res, next) => {
+router.post('/results', authenticateToken, checkModuleAccess('quiz'), async (req, res, next) => {
   try {
     const {
       subject,
@@ -122,7 +123,7 @@ router.post('/results', authenticateToken, async (req, res, next) => {
 /**
  * Get user's quiz history
  */
-router.get('/history/:userId', authenticateToken, async (req, res, next) => {
+router.get('/history/:userId', authenticateToken, checkModuleAccess('quiz'), async (req, res, next) => {
   try {
     const { userId } = req.params;
 

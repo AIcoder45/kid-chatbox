@@ -37,9 +37,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
   return (
     <Card width="100%" maxWidth="800px" margin="0 auto">
-      <CardBody>
-        <VStack spacing={6} align="stretch">
-          <Text fontSize="xl" fontWeight="bold" color="blue.600">
+      <CardBody p={{ base: 4, md: 6 }}>
+        <VStack spacing={{ base: 4, md: 6 }} align="stretch">
+          <Text fontSize={{ base: 'lg', md: 'xl' }} fontWeight="bold" color="blue.600">
             Q{question.number}. {question.question}
           </Text>
 
@@ -69,18 +69,19 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   onClick={() => onAnswerSelect(option.key)}
                   colorScheme={buttonColorScheme}
                   variant={variant}
-                  size="lg"
+                  size={{ base: 'md', md: 'lg' }}
                   justifyContent="flex-start"
                   textAlign="left"
                   height="auto"
-                  paddingY={4}
+                  paddingY={{ base: 3, md: 4 }}
                   whiteSpace="normal"
                   isDisabled={showFeedback}
+                  w="100%"
                 >
-                  <Text fontWeight="bold" marginRight={2}>
+                  <Text fontWeight="bold" marginRight={2} fontSize={{ base: 'sm', md: 'md' }}>
                     {option.key})
                   </Text>
-                  <Text flex={1}>{option.value}</Text>
+                  <Text flex={1} fontSize={{ base: 'sm', md: 'md' }}>{option.value}</Text>
                 </Button>
               );
             })}

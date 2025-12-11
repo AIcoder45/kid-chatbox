@@ -5,13 +5,25 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { checkModuleAccess } = require('../middleware/rbac');
+const {
+  checkTopicLimit,
+  incrementTopicUsage,
+} = require('../middleware/plan-limits');
+const { trackStudySessionStart, trackStudySessionComplete } = require('../utils/eventTracker');
 
 const router = express.Router();
 
 /**
  * Save study session
  */
-router.post('/sessions', authenticateToken, async (req, res, next) => {
+router.post(
+  '/sessions',
+  authenticateToken,
+  checkModuleAccess('study'),
+  checkTopicLimit,
+  incrementTopicUsage,
+  async (req, res, next) => {
   try {
     const {
       subject,
@@ -91,7 +103,7 @@ router.post('/sessions', authenticateToken, async (req, res, next) => {
 /**
  * Get user's study history
  */
-router.get('/history/:userId', authenticateToken, async (req, res, next) => {
+router.get('/history/:userId', authenticateToken, checkModuleAccess('study'), async (req, res, next) => {
   try {
     const { userId } = req.params;
 
