@@ -4,6 +4,7 @@
 
 import { Box, Text, HStack } from '@/shared/design-system';
 import { Link as RouterLink } from 'react-router-dom';
+import { APP_CONSTANTS } from '@/constants/app';
 
 /**
  * Footer component with app information
@@ -22,7 +23,7 @@ export const Footer: React.FC = () => {
     >
       <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={4}>
         <Text fontSize="sm">
-          © {currentYear} Guru AI. All rights reserved.
+          © {currentYear} {APP_CONSTANTS.BRAND_NAME}. All rights reserved.
         </Text>
         <HStack spacing={4}>
           <RouterLink to="/dashboard" style={{ fontSize: '0.875rem', color: '#90cdf4' }}>

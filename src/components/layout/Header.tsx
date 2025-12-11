@@ -22,6 +22,7 @@ import {
 import { authApi } from '@/services/api';
 import { User } from '@/types';
 import { useFontSize } from '@/contexts/FontSizeContext';
+import { APP_CONSTANTS } from '@/constants/app';
 
 interface HeaderProps {
   user?: User | null;
@@ -82,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
             flex={{ base: 1, md: 'none' }}
             textAlign={{ base: 'center', md: 'left' }}
           >
-            🎓 Guru AI
+            🎓 {APP_CONSTANTS.BRAND_NAME}
           </Heading>
 
           {/* Right: Navigation and Controls */}
