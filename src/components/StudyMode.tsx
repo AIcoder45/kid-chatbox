@@ -23,7 +23,7 @@ import { StudyModeForm } from './StudyModeForm';
 import { generateLesson } from '@/services/study';
 import { QuizConfig } from '@/types/quiz';
 import { Lesson } from '@/services/study';
-import { authApi, studyApi } from '@/services/api';
+import { authApi, studyApi, profileApi } from '@/services/api';
 import { User } from '@/types';
 import { STUDY_MODE_MESSAGES } from '@/constants/study';
 import { useFontSize } from '@/contexts/FontSizeContext';
@@ -52,8 +52,25 @@ export const StudyMode: React.FC = () => {
     topic: string;
     difficulty: string;
   }) => {
-    const { user } = authApi.getCurrentUser();
-    const userProfile = user as User | null;
+    // Get user profile data - fetch fresh data from API to ensure we have latest profile
+    let userProfile: User | null = null;
+    
+    try {
+      // Fetch fresh user profile from API (includes latest age and preferredLanguage)
+      const { user: freshUser } = await profileApi.getProfile();
+      userProfile = freshUser as User | null;
+    } catch (error) {
+      // If profile API fails, try auth API
+      try {
+        const { user: authUser } = await authApi.fetchCurrentUser();
+        userProfile = authUser as User | null;
+      } catch (authError) {
+        // If both fail, fall back to localStorage
+        console.warn('Failed to fetch fresh user data, using cached data:', error);
+        const { user } = authApi.getCurrentUser();
+        userProfile = user as User | null;
+      }
+    }
     
     if (!userProfile || !userProfile.age || !userProfile.preferredLanguage) {
       setError(STUDY_MODE_MESSAGES.ERROR_PROFILE_INCOMPLETE);

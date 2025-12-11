@@ -20,7 +20,7 @@ import { ResultsView } from './ResultsView';
 import { ConfigurationForm } from './ConfigurationForm';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { generateQuizQuestions, generateImprovementTips } from '@/services/openai';
-import { quizApi, authApi, scheduledTestsApi } from '@/services/api';
+import { quizApi, authApi, scheduledTestsApi, profileApi } from '@/services/api';
 import { QuizConfig, AnswerResult, Question } from '@/types/quiz';
 import { QUIZ_CONSTANTS, SUBJECTS } from '@/constants/quiz';
 import { isValidAnswer } from '@/utils/validation';
@@ -61,10 +61,27 @@ export const QuizTutor: React.FC = () => {
     questionCount?: number;
     difficulty: string;
   }) => {
-    // Get user profile data
-    const { user } = authApi.getCurrentUser();
-    const userProfile = user as User | null;
+    // Get user profile data - fetch fresh data from API to ensure we have latest profile
+    let userProfile: User | null = null;
     
+    try {
+      // Fetch fresh user profile from API (includes latest age and preferredLanguage)
+      const { user: freshUser } = await profileApi.getProfile();
+      userProfile = freshUser as User | null;
+    } catch (error) {
+      // If profile API fails, try auth API
+      try {
+        const { user: authUser } = await authApi.fetchCurrentUser();
+        userProfile = authUser as User | null;
+      } catch (authError) {
+        // If both fail, fall back to localStorage
+        console.warn('Failed to fetch fresh user data, using cached data:', error);
+        const { user } = authApi.getCurrentUser();
+        userProfile = user as User | null;
+      }
+    }
+    
+    // Validate user profile has required fields
     if (!userProfile || !userProfile.age || !userProfile.preferredLanguage) {
       setError('Please complete your profile first. Go to Profile to set your age and preferred language.');
       setPhase('config');

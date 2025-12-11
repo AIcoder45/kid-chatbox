@@ -47,7 +47,7 @@ node server/scripts/create-super-user.js admin@example.com "SecurePass123" "Admi
 
 #### Add Admin Role to Existing User
 ```bash
-node server/scripts/add-admin-user.js <email>
+node server/scripts/add-admin-user.js amithbti416@gmail.com
 ```
 
 Example:

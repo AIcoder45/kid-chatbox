@@ -36,12 +36,15 @@ const initializeDatabase = async () => {
     const { migrateSchema } = require('../scripts/migrate-schema');
     const { migratePlansSchema } = require('../scripts/migrate-plans-schema');
     const { migrateScheduledTests } = require('../scripts/migrate-scheduled-tests');
+    const { migrateStudyLibraryContent } = require('../scripts/migrate-study-library-content');
     // Run comprehensive schema migration
     await migrateSchema();
     // Run plans schema migration
     await migratePlansSchema();
     // Run scheduled tests schema migration
     await migrateScheduledTests();
+    // Run study library content migration
+    await migrateStudyLibraryContent();
     console.log('✅ Database tables initialized successfully');
   } catch (error) {
     console.error('❌ Error initializing database:', error);

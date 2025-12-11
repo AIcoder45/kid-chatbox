@@ -68,9 +68,26 @@ async function generateQuizQuestions(config) {
 
   const topicsText = topics.length === 1 ? topics[0] : topics.join(', ');
   
+  // Fetch subtopic description if subtopicId is provided but no description given
+  let finalDescription = description;
+  if (subtopicId && !finalDescription) {
+    try {
+      const { pool } = require('../config/database');
+      const subtopicResult = await pool.query(
+        'SELECT description, title FROM subtopics WHERE id = $1',
+        [subtopicId]
+      );
+      if (subtopicResult.rows.length > 0 && subtopicResult.rows[0].description) {
+        finalDescription = `${subtopicResult.rows[0].title}: ${subtopicResult.rows[0].description}`;
+      }
+    } catch (error) {
+      console.warn('Could not fetch subtopic description:', error.message);
+    }
+  }
+  
   // Include description in the prompt if provided
-  const descriptionContext = description 
-    ? `\nQuiz Context/Description: ${description}\nUse this description to understand the quiz's purpose and generate questions that align with this context.`
+  const descriptionContext = finalDescription 
+    ? `\nQuiz Context/Description: ${finalDescription}\nUse this description to understand the quiz's purpose and generate questions that align with this context.`
     : '';
 
   const prompt = `Generate ${numberOfQuestions} educational quiz questions for children aged ${ageGroup} years.
