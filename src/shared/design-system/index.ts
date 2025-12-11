@@ -40,6 +40,7 @@ export {
   Link,
   FormControl,
   FormLabel,
+  FormHelperText,
   Accordion,
   AccordionItem,
   AccordionButton,

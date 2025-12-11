@@ -38,9 +38,9 @@ interface StudentSidebarProps {
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
   { path: '/scheduled-tests', label: 'Scheduled Tests', icon: '📅' },
+  { path: '/quiz', label: 'AI Quiz Mode', icon: '📝' },
   { path: '/study', label: 'AI Study Mode', icon: '📚' },
   { path: '/study-library', label: 'Study Library', icon: '📚' },
-  { path: '/quiz', label: 'AI Quiz Mode', icon: '📝' },
   { path: '/study-history', label: 'Study History', icon: '📖' },
   { path: '/quiz-history', label: 'Quiz History', icon: '📊' },
   { path: '/profile', label: 'My Profile', icon: '👤' },

@@ -9,7 +9,6 @@ import {
   VStack,
   Text,
   Button,
-  Spinner,
   Alert,
   AlertIcon,
   AlertTitle,
@@ -27,13 +26,16 @@ import { AllQuestionsView } from './AllQuestionsView';
 import { Timer } from './Timer';
 import { ResultsView } from './ResultsView';
 import { ConfigurationForm } from './ConfigurationForm';
+import { QuizLoading } from './QuizLoading';
+import { QuizLibrary } from './QuizLibrary';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { generateQuizQuestions, generateImprovementTips } from '@/services/openai';
-import { quizApi, authApi, scheduledTestsApi, profileApi, planApi } from '@/services/api';
+import { quizApi, authApi, scheduledTestsApi, profileApi, planApi, quizLibraryApi } from '@/services/api';
 import { QuizConfig, AnswerResult, Question } from '@/types/quiz';
 import { QUIZ_CONSTANTS, SUBJECTS, MESSAGES } from '@/constants/quiz';
 import { isValidAnswer } from '@/utils/validation';
 import { User } from '@/types';
+import { useQuizTimer } from '@/contexts/QuizTimerContext';
 
 type QuizPhase = 'config' | 'loading' | 'quiz' | 'results';
 
@@ -44,6 +46,7 @@ type QuizPhase = 'config' | 'loading' | 'quiz' | 'results';
 export const QuizTutor: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setTimer } = useQuizTimer();
   const [phase, setPhase] = useState<QuizPhase>('config');
   const [config, setConfig] = useState<QuizConfig | null>(() => {
     try {
@@ -63,6 +66,8 @@ export const QuizTutor: React.FC = () => {
   const [quizStartTime, setQuizStartTime] = useState<number>(0);
   const [resultSaved, setResultSaved] = useState(false);
   const [scheduledTestId, setScheduledTestId] = useState<string | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<string | undefined>(undefined);
+  const [isLibraryQuiz, setIsLibraryQuiz] = useState<boolean>(false);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasLoadedScheduledTestRef = useRef(false);
   const beepPlayedRef = useRef(false);
@@ -77,6 +82,10 @@ export const QuizTutor: React.FC = () => {
     questionCount?: number;
     difficulty: string;
     instructions?: string;
+    timeLimit?: number;
+    gradeLevel?: string;
+    sampleQuestion?: string;
+    examStyle?: string;
   }) => {
     // Get user profile data - fetch fresh data from API to ensure we have latest profile
     let userProfile: User | null = null;
@@ -105,15 +114,16 @@ export const QuizTutor: React.FC = () => {
       return;
     }
 
-    // Check plan limits before starting quiz (only for AI-generated quizzes, not scheduled tests)
-    if (!scheduledTestId) {
+    // Check plan limits before starting quiz (only for AI-generated quizzes, not scheduled tests or library quizzes)
+    // Library quizzes bypass plan limits
+    if (!scheduledTestId && !isLibraryQuiz) {
       try {
         const { user } = authApi.getCurrentUser();
         if (user && (user as { id: string }).id) {
           const planInfo = await planApi.getUserPlan((user as { id: string }).id);
           if (planInfo.limits.remainingQuizzes <= 0) {
             setError(
-              `Daily quiz limit reached. You have used ${planInfo.usage.quizCount} of ${planInfo.limits.dailyQuizLimit} quizzes today. Please try again tomorrow or upgrade your plan.`
+              `Daily quiz limit reached. You have used ${planInfo.usage.quizCount} of ${planInfo.limits.dailyQuizLimit} quizzes today. Please try again tomorrow, upgrade your plan, or try a quiz from the library (library quizzes don't count toward limits).`
             );
             setPhase('config');
             return;
@@ -133,6 +143,10 @@ export const QuizTutor: React.FC = () => {
       questionCount: quizConfig.questionCount || QUIZ_CONSTANTS.DEFAULT_QUESTIONS,
       difficulty: quizConfig.difficulty as QuizConfig['difficulty'],
       instructions: quizConfig.instructions,
+      timeLimit: quizConfig.timeLimit,
+      gradeLevel: quizConfig.gradeLevel,
+      sampleQuestion: quizConfig.sampleQuestion,
+      examStyle: quizConfig.examStyle,
     };
     setConfig(fullConfig);
     setPhase('loading');
@@ -143,15 +157,39 @@ export const QuizTutor: React.FC = () => {
       setQuestions(generatedQuestions);
       setPhase('quiz');
       setAnswers(new Map());
-      // Calculate timer based on question count
-      const totalTime = fullConfig.questionCount * QUIZ_CONSTANTS.TIME_PER_QUESTION_SECONDS;
+      // Calculate timer: use timeLimit if provided (convert minutes to seconds), otherwise calculate based on question count
+      const totalTime = fullConfig.timeLimit
+        ? fullConfig.timeLimit * 60
+        : fullConfig.questionCount * QUIZ_CONSTANTS.TIME_PER_QUESTION_SECONDS;
       totalTimeRef.current = totalTime;
       beepPlayedRef.current = false;
       setTimeRemaining(totalTime);
+      // Update context timer
+      setTimer(totalTime, totalTime, true);
       setAllAnswerResults([]);
       setImprovementTips([]);
       setQuizStartTime(Date.now());
       setResultSaved(false);
+
+      // Save to quiz library automatically
+      try {
+        await quizLibraryApi.saveToLibrary({
+          subject: fullConfig.subject,
+          subtopics: fullConfig.subtopics,
+          difficulty: fullConfig.difficulty,
+          age_group: fullConfig.age,
+          language: fullConfig.language,
+          question_count: fullConfig.questionCount,
+          time_limit: fullConfig.timeLimit,
+          grade_level: fullConfig.gradeLevel,
+          exam_style: fullConfig.examStyle,
+          questions: generatedQuestions,
+          config: fullConfig,
+        });
+      } catch (libraryError) {
+        // Don't fail quiz generation if library save fails
+        console.warn('Failed to save quiz to library:', libraryError);
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -215,6 +253,8 @@ export const QuizTutor: React.FC = () => {
 
     setAllAnswerResults(answerResults);
     setPhase('loading');
+    // Update context - quiz ended
+    setTimer(0, totalTimeRef.current, false);
 
     const timeTaken = Math.floor((Date.now() - quizStartTime) / 1000);
     const correctCount = answerResults.filter((r) => r.isCorrect).length;
@@ -243,6 +283,7 @@ export const QuizTutor: React.FC = () => {
           explanation_of_mistakes: explanations,
           time_taken: timeTaken,
           score_percentage: scorePercentage,
+          isLibraryQuiz: isLibraryQuiz,
         });
         setResultSaved(true);
       }
@@ -449,10 +490,10 @@ export const QuizTutor: React.FC = () => {
             }
           }
           
-          if (prev <= 1) {
-            return 0;
-          }
-          return prev - 1;
+          const newTime = prev <= 1 ? 0 : prev - 1;
+          // Update context timer
+          setTimer(newTime, totalTimeRef.current, phase === 'quiz' && newTime > 0);
+          return newTime;
         });
       }, 1000);
     }
@@ -462,15 +503,17 @@ export const QuizTutor: React.FC = () => {
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, [phase, timeRemaining, playBeep]);
+  }, [phase, timeRemaining, playBeep, setTimer]);
 
   // Auto-submit when time runs out
   useEffect(() => {
     if (phase === 'quiz' && timeRemaining === 0 && questions.length > 0) {
       handleSubmitQuiz();
+      // Update context - quiz ended
+      setTimer(0, totalTimeRef.current, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, timeRemaining, questions.length]);
+  }, [phase, timeRemaining, questions.length, setTimer]);
 
   const handleAnswerSelect = useCallback(
     (questionNumber: number, answer: 'A' | 'B' | 'C' | 'D') => {
@@ -702,43 +745,88 @@ export const QuizTutor: React.FC = () => {
     }
   }, [config, phase, handleConfigComplete, scheduledTestId, location.search]);
 
+  /**
+   * Handle quiz selection from library
+   */
+  const handleLibraryQuizSelect = useCallback((data: { questions: Question[]; config: unknown }) => {
+    const libraryConfig = data.config as QuizConfig;
+    setIsLibraryQuiz(true);
+    setConfig(libraryConfig);
+    setQuestions(data.questions);
+    setPhase('quiz');
+    setAnswers(new Map());
+    
+    // Calculate timer
+    const totalTime = libraryConfig.timeLimit
+      ? libraryConfig.timeLimit * 60
+      : libraryConfig.questionCount * QUIZ_CONSTANTS.TIME_PER_QUESTION_SECONDS;
+    totalTimeRef.current = totalTime;
+    beepPlayedRef.current = false;
+    setTimeRemaining(totalTime);
+    setTimer(totalTime, totalTime, true);
+    setAllAnswerResults([]);
+    setImprovementTips([]);
+    setQuizStartTime(Date.now());
+    setResultSaved(false);
+  }, [setTimer]);
+
   const score = allAnswerResults.filter((r) => r.isCorrect).length;
   const answeredCount = answers.size;
 
   if (phase === 'config') {
     return (
       <>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Box padding={{ base: 4, md: 6 }}>
+        <Box display="flex" gap={6} padding={{ base: 4, md: 6 }} maxWidth="1400px" marginX="auto">
+          {/* Main Form - Left Side */}
+          <Box flex={1} maxWidth="800px">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
             >
-              <ConfigurationForm onConfigComplete={handleConfigComplete} />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+              >
+                <ConfigurationForm 
+                  onConfigComplete={(config) => {
+                    setSelectedSubject(config.subject);
+                    handleConfigComplete(config);
+                  }} 
+                />
+              </motion.div>
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Alert status="error" marginTop={4} maxWidth="600px" marginX="auto" borderRadius="xl">
+                      <AlertIcon />
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Alert status="error" marginTop={4} maxWidth="600px" marginX="auto" borderRadius="xl">
-                    <AlertIcon />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </Box>
-        </motion.div>
+
+          {/* Quiz Library - Right Side (Desktop Only) */}
+          <Box
+            display={{ base: 'none', lg: 'block' }}
+            width="350px"
+            flexShrink={0}
+          >
+            <QuizLibrary
+              selectedSubject={selectedSubject}
+              onQuizSelect={handleLibraryQuizSelect}
+            />
+          </Box>
+        </Box>
         {/* Confirmation Modal for Navigation */}
         <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
           <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
@@ -771,58 +859,17 @@ export const QuizTutor: React.FC = () => {
   }
 
   if (phase === 'loading') {
+    // Determine loading type based on context
+    const loadingType =
+      scheduledTestId
+        ? 'loading-test'
+        : config
+          ? 'generating'
+          : 'loading-results';
+
     return (
       <>
-        <Box
-          padding={{ base: 4, md: 6 }}
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          minHeight="400px"
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <VStack spacing={6}>
-              <motion.div
-                animate={{
-                  rotate: 360,
-                }}
-                transition={{
-                  duration: 1,
-                  repeat: Infinity,
-                  ease: 'linear',
-                }}
-              >
-                <Spinner size="xl" color="blue.500" thickness="4px" />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="semibold" textAlign="center">
-                  {scheduledTestId
-                    ? 'Loading your scheduled test...'
-                    : config
-                      ? 'Generating your quiz questions...'
-                      : 'Loading results...'}
-                </Text>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 1, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-              >
-                <Text fontSize="sm" color="gray.500" textAlign="center">
-                  Please wait...
-                </Text>
-              </motion.div>
-            </VStack>
-          </motion.div>
-        </Box>
+        <QuizLoading loadingType={loadingType} />
         {/* Confirmation Modal for Navigation */}
         <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
           <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />

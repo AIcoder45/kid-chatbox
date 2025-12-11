@@ -37,6 +37,7 @@ const initializeDatabase = async () => {
     const { migratePlansSchema } = require('../scripts/migrate-plans-schema');
     const { migrateScheduledTests } = require('../scripts/migrate-scheduled-tests');
     const { migrateStudyLibraryContent } = require('../scripts/migrate-study-library-content');
+    const { migrateQuizLibrary } = require('../scripts/migrate-quiz-library');
     // Run comprehensive schema migration
     await migrateSchema();
     // Run plans schema migration
@@ -45,6 +46,8 @@ const initializeDatabase = async () => {
     await migrateScheduledTests();
     // Run study library content migration
     await migrateStudyLibraryContent();
+    // Run quiz library migration
+    await migrateQuizLibrary();
     console.log('✅ Database tables initialized successfully');
   } catch (error) {
     console.error('❌ Error initializing database:', error);

@@ -31,6 +31,7 @@ import { QuizHistoryManagement } from '@/components/admin/QuizHistoryManagement'
 import { StudyLibraryContentManagement } from '@/components/admin/StudyLibraryContentManagement';
 import { authApi } from '@/services/api';
 import { User } from '@/types';
+import { QuizTimerProvider } from '@/contexts/QuizTimerContext';
 
 /**
  * Theme configuration with dark mode support
@@ -125,7 +126,8 @@ export const App: React.FC = () => {
 
   return (
     <ChakraProvider theme={theme}>
-      <BrowserRouter>
+      <QuizTimerProvider>
+        <BrowserRouter>
         <Routes>
           <Route
             path="/"
@@ -339,7 +341,8 @@ export const App: React.FC = () => {
             }
           />
         </Routes>
-      </BrowserRouter>
+        </BrowserRouter>
+      </QuizTimerProvider>
     </ChakraProvider>
   );
 };

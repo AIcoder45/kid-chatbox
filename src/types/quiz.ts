@@ -16,6 +16,10 @@ export interface QuizConfig {
   questionCount: number;
   difficulty: Difficulty;
   instructions?: string; // Optional custom instructions for AI question generation
+  timeLimit?: number; // Optional time limit in minutes
+  gradeLevel?: string; // Optional class/grade level
+  sampleQuestion?: string; // Optional sample question or pattern
+  examStyle?: string; // Optional exam style (CBSE, NCERT, Olympiad, competitive)
 }
 
 export interface Question {

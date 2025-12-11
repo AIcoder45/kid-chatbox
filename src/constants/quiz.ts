@@ -5,7 +5,7 @@
 export const QUIZ_CONSTANTS = {
   DEFAULT_QUESTIONS: 15,
   MIN_QUESTIONS: 5,
-  MAX_QUESTIONS: 20,
+  MAX_QUESTIONS: 40,
   MIN_AGE: 6,
   MAX_AGE: 14,
   TIME_PER_QUESTION_SECONDS: 36, // 36 seconds per question (approximately 2 minutes for 15 questions)
@@ -29,6 +29,7 @@ export const SUBJECTS = {
   ENGLISH: 'English',
   MATHS: 'Maths',
   EVS_SCIENCE: 'EVS / Science',
+  SOCIAL_STUDIES: 'Social Studies',
   GENERAL_KNOWLEDGE: 'General Knowledge',
   CURRENT_AFFAIRS: 'Current Affairs',
   CHESS: 'Chess',
@@ -114,6 +115,29 @@ export const GENERAL_KNOWLEDGE_SUBTOPICS = [
   'Nature & wildlife',
   'History basics',
   'Geography basics',
+] as const;
+
+export const SOCIAL_STUDIES_SUBTOPICS = [
+  'History of India',
+  'World History',
+  'Indian Geography',
+  'World Geography',
+  'Civics & Government',
+  'Indian Constitution',
+  'Rivers & Water Bodies',
+  'Mountains & Plateaus',
+  'Climate & Weather',
+  'Natural Resources',
+  'Agriculture & Farming',
+  'Industries & Trade',
+  'Transportation & Communication',
+  'Culture & Traditions',
+  'Festivals & Celebrations',
+  'Monuments & Heritage',
+  'Freedom Struggle',
+  'Ancient Civilizations',
+  'Medieval Period',
+  'Modern History',
 ] as const;
 
 export const CURRENT_AFFAIRS_SUBTOPICS = [
@@ -334,7 +358,7 @@ export const MESSAGES = {
   LANGUAGE_PROMPT:
     'Which language should I use for questions: Hindi, English, or Hinglish (mix)?',
   SUBJECT_PROMPT:
-    'Which subject do you want: Hindi, English, Maths, EVS / Science, General Knowledge, Current Affairs, Chess, or Something else (Other)?',
+    'Which subject do you want: Hindi, English, Maths, EVS / Science, Social Studies, General Knowledge, Current Affairs, Chess, or Something else (Other)?',
   SUBTOPIC_PROMPT: 'Great! Now choose a subtopic:',
   QUIZ_START: 'Great, I will ask you 5 questions on',
   QUIZ_INSTRUCTIONS:

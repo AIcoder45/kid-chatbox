@@ -31,6 +31,7 @@ const studyLibraryRoutes = require('./routes/study-library');
 const studyLibraryContentRoutes = require('./routes/study-library-content');
 const plansRoutes = require('./routes/plans');
 const scheduledTestsRoutes = require('./routes/scheduled-tests');
+const quizLibraryRoutes = require('./routes/quiz-library');
 const publicRoutes = require('./routes/public');
 const { initializeDatabase } = require('./config/database');
 
@@ -98,6 +99,7 @@ app.use('/api/study-library', studyLibraryRoutes);
 app.use('/api/admin/study-library-content', studyLibraryContentRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/scheduled-tests', scheduledTestsRoutes);
+app.use('/api/quiz-library', quizLibraryRoutes);
 app.use('/api/public', publicRoutes);
 
 // Serve static files from React app in production

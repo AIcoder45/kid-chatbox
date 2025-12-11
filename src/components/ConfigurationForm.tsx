@@ -23,14 +23,22 @@ import {
   SliderThumb,
   SliderMark,
   HStack,
+  FormControl,
+  FormLabel,
+  FormHelperText,
+  Badge,
+  Flex,
+  Divider,
 } from '@/shared/design-system';
 import {
   SUBJECTS,
   DIFFICULTY_LEVELS,
+  LANGUAGES,
   HINDI_SUBTOPICS,
   ENGLISH_SUBTOPICS,
   MATHS_SUBTOPICS,
   EVS_SCIENCE_SUBTOPICS,
+  SOCIAL_STUDIES_SUBTOPICS,
   GENERAL_KNOWLEDGE_SUBTOPICS,
   CURRENT_AFFAIRS_SUBTOPICS,
   CHESS_SUBTOPICS,
@@ -48,6 +56,10 @@ interface ConfigurationFormProps {
     questionCount?: number; // Optional, defaults to 15 for quiz mode
     difficulty: Difficulty;
     instructions?: string; // Optional custom instructions for AI question generation
+    timeLimit?: number; // Optional time limit in minutes
+    gradeLevel?: string; // Optional class/grade level
+    sampleQuestion?: string; // Optional sample question or pattern
+    examStyle?: string; // Optional exam style (CBSE, NCERT, Olympiad, competitive)
   }) => void;
 }
 
@@ -66,6 +78,10 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
   );
   const [difficulty, setDifficulty] = useState<Difficulty>(DIFFICULTY_LEVELS.BASIC);
   const [instructions, setInstructions] = useState<string>('');
+  const [timeLimit, setTimeLimit] = useState<string>('');
+  const [gradeLevel, setGradeLevel] = useState<string>('');
+  const [sampleQuestion, setSampleQuestion] = useState<string>('');
+  const [examStyle, setExamStyle] = useState<string>('');
   
   // Map difficulty levels to slider values (0-3)
   const difficultyToSliderValue = useCallback((diff: Difficulty): number => {
@@ -90,6 +106,8 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
         return MATHS_SUBTOPICS;
       case SUBJECTS.EVS_SCIENCE:
         return EVS_SCIENCE_SUBTOPICS;
+      case SUBJECTS.SOCIAL_STUDIES:
+        return SOCIAL_STUDIES_SUBTOPICS;
       case SUBJECTS.GENERAL_KNOWLEDGE:
         return GENERAL_KNOWLEDGE_SUBTOPICS;
       case SUBJECTS.CURRENT_AFFAIRS:
@@ -98,6 +116,106 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
         return CHESS_SUBTOPICS;
       default:
         return [];
+    }
+  }, []);
+
+  /**
+   * Get subject-specific smart suggestions for instructions
+   */
+  const getSubjectSuggestions = useCallback((selectedSubject: Subject): string[] => {
+    const baseSuggestions = [
+      'Choose question type (MCQ, fill in the blanks, true/false)',
+      'Ask for scenario-based or story-based questions',
+      'Mention class/grade level',
+      'Add exam style (CBSE, NCERT, Olympiad, competitive)',
+      'Add Bloom\'s level (remember → create)',
+    ];
+
+    switch (selectedSubject) {
+      case SUBJECTS.HINDI:
+        return [
+          'Focus on grammar topics (Sangya, Kriya, Visheshan, etc.)',
+          'Include reading comprehension passages',
+          'Add poetry (Kavita) questions',
+          'Include story (Kahani) based questions',
+          'Focus on vocabulary (Shabd Rachna)',
+          'Add Muhavare / Lokoktiyan questions',
+          ...baseSuggestions,
+        ];
+      case SUBJECTS.ENGLISH:
+        return [
+          'Focus on grammar (nouns, verbs, tenses, punctuation)',
+          'Include reading comprehension',
+          'Add vocabulary and spelling questions',
+          'Include creative writing prompts',
+          'Focus on parts of speech',
+          'Add sentence structure questions',
+          ...baseSuggestions,
+        ];
+      case SUBJECTS.MATHS:
+        return [
+          'Focus on problem-solving techniques',
+          'Include word problems',
+          'Add step-by-step solution questions',
+          'Focus on specific topics (addition, multiplication, fractions, etc.)',
+          'Include real-world application problems',
+          'Add mental math questions',
+          ...baseSuggestions,
+        ];
+      case SUBJECTS.EVS_SCIENCE:
+        return [
+          'Focus on environmental awareness',
+          'Include science experiments and observations',
+          'Add questions about plants, animals, and nature',
+          'Focus on health and hygiene',
+          'Include questions about seasons and weather',
+          'Add questions about our body and senses',
+          ...baseSuggestions,
+        ];
+      case SUBJECTS.SOCIAL_STUDIES:
+        return [
+          'Focus on Indian history and freedom struggle',
+          'Include geography (rivers, mountains, states)',
+          'Add civics and government questions',
+          'Include Indian Constitution basics',
+          'Focus on culture, traditions, and festivals',
+          'Add questions on monuments and heritage',
+          'Include natural resources and agriculture',
+          'Add transportation and communication topics',
+          ...baseSuggestions,
+        ];
+      case SUBJECTS.GENERAL_KNOWLEDGE:
+        return [
+          'Focus on current events',
+          'Include questions about India and world',
+          'Add questions about famous personalities',
+          'Focus on history and geography',
+          'Include questions about sports and games',
+          'Add questions about festivals and culture',
+          ...baseSuggestions,
+        ];
+      case SUBJECTS.CURRENT_AFFAIRS:
+        return [
+          'Focus on recent news (last 1-2 years)',
+          'Include questions about recent sports events',
+          'Add questions about science discoveries',
+          'Focus on space missions and achievements',
+          'Include questions about awards and honors',
+          'Add questions about recent developments',
+          ...baseSuggestions,
+        ];
+      case SUBJECTS.CHESS:
+        return [
+          'Focus on chess strategies and tactics',
+          'Include board position questions',
+          'Add questions about chess notation',
+          'Focus on opening principles',
+          'Include endgame scenarios',
+          'Add questions about famous chess games',
+          ...baseSuggestions,
+        ];
+      default:
+        return baseSuggestions;
     }
   }, []);
 
@@ -138,15 +256,21 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
       questionCountNum >= QUIZ_CONSTANTS.MIN_QUESTIONS &&
       questionCountNum <= QUIZ_CONSTANTS.MAX_QUESTIONS
     ) {
+      const timeLimitNum = timeLimit.trim() ? parseInt(timeLimit, 10) : undefined;
+      
       onConfigComplete({
         subject,
         subtopics: finalSubtopics,
         questionCount: questionCountNum,
         difficulty,
         instructions: finalInstructions,
+        timeLimit: timeLimitNum && !isNaN(timeLimitNum) ? timeLimitNum : undefined,
+        gradeLevel: gradeLevel.trim() || undefined,
+        sampleQuestion: sampleQuestion.trim() || undefined,
+        examStyle: examStyle.trim() || undefined,
       });
     }
-  }, [subject, selectedSubtopics, customSubtopic, questionCount, difficulty, instructions, onConfigComplete]);
+  }, [subject, selectedSubtopics, customSubtopic, questionCount, difficulty, instructions, timeLimit, gradeLevel, sampleQuestion, examStyle, onConfigComplete]);
   
   const handleSliderChange = useCallback((value: number) => {
     const clampedValue = Math.max(0, Math.min(3, value));
@@ -180,7 +304,7 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4 }}
     >
-      <Card width="100%" maxWidth="700px" margin="0 auto" boxShadow="xl" borderRadius="2xl" overflow="hidden">
+      <Card width="100%" maxWidth="1200px" margin="0 auto" boxShadow="xl" borderRadius="2xl" overflow="hidden">
         <CardBody padding={{ base: 4, md: 6 }}>
           <VStack spacing={6} align="stretch">
             <motion.div
@@ -404,95 +528,144 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
             </Box>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-          >
-            <Box>
-              <Text fontSize="md" fontWeight="semibold" marginBottom={2} color="gray.700">
-                How many questions would you like? ({QUIZ_CONSTANTS.MIN_QUESTIONS} - {QUIZ_CONSTANTS.MAX_QUESTIONS})
-              </Text>
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileFocus={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Input
-                  type="number"
-                  value={questionCount}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Allow empty string for better UX
-                    if (value === '') {
-                      setQuestionCount('');
-                      return;
-                    }
-                    const num = parseInt(value, 10);
-                    if (!isNaN(num)) {
-                      // Clamp value between min and max
-                      const clamped = Math.max(
-                        QUIZ_CONSTANTS.MIN_QUESTIONS,
-                        Math.min(QUIZ_CONSTANTS.MAX_QUESTIONS, num)
-                      );
-                      setQuestionCount(clamped.toString());
-                    }
-                  }}
-                  placeholder={`Default: ${QUIZ_CONSTANTS.DEFAULT_QUESTIONS}`}
-                  size="lg"
-                  min={QUIZ_CONSTANTS.MIN_QUESTIONS}
-                  max={QUIZ_CONSTANTS.MAX_QUESTIONS}
-                  borderRadius="xl"
-                  borderWidth={2}
-                  borderColor={isValidQuestionCount ? 'blue.200' : 'gray.200'}
-                  _hover={{ borderColor: isValidQuestionCount ? 'blue.400' : 'gray.400' }}
-                  _focus={{ borderColor: isValidQuestionCount ? 'blue.500' : 'red.500', boxShadow: isValidQuestionCount ? '0 0 0 3px rgba(66, 153, 225, 0.2)' : '0 0 0 3px rgba(229, 62, 62, 0.2)' }}
-                  transition="all 0.2s"
-                />
-              </motion.div>
-              <AnimatePresence mode="wait">
-                {questionCount && !isValidQuestionCount && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Text fontSize="sm" color="red.500" marginTop={1} fontWeight="medium">
-                      ⚠️ Please enter a number between {QUIZ_CONSTANTS.MIN_QUESTIONS} and {QUIZ_CONSTANTS.MAX_QUESTIONS}
-                    </Text>
-                  </motion.div>
-                )}
-                {isValidQuestionCount && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.3 }}
-                    key="time-estimate"
-                  >
-                    <Text fontSize="sm" color="blue.600" marginTop={1} fontWeight="semibold">
-                      ⏱️ Estimated time: {Math.ceil((questionCountNum * QUIZ_CONSTANTS.TIME_PER_QUESTION_SECONDS) / 60)} minutes
-                    </Text>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Box>
-          </motion.div>
+          {/* Number of Questions and Time Limit - Two Column Layout */}
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+            {/* Number of Questions */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+            >
+              <FormControl>
+                <FormLabel fontSize="md" fontWeight="semibold" color="gray.700">
+                  Number of Questions
+                </FormLabel>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileFocus={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Input
+                    type="number"
+                    value={questionCount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow empty string for better UX
+                      if (value === '') {
+                        setQuestionCount('');
+                        return;
+                      }
+                      const num = parseInt(value, 10);
+                      if (!isNaN(num)) {
+                        // Clamp value between min and max
+                        const clamped = Math.max(
+                          QUIZ_CONSTANTS.MIN_QUESTIONS,
+                          Math.min(QUIZ_CONSTANTS.MAX_QUESTIONS, num)
+                        );
+                        setQuestionCount(clamped.toString());
+                      }
+                    }}
+                    placeholder={`Default: ${QUIZ_CONSTANTS.DEFAULT_QUESTIONS}`}
+                    size="lg"
+                    min={QUIZ_CONSTANTS.MIN_QUESTIONS}
+                    max={QUIZ_CONSTANTS.MAX_QUESTIONS}
+                    borderRadius="xl"
+                    borderWidth={2}
+                    borderColor={isValidQuestionCount ? 'blue.200' : 'gray.200'}
+                    _hover={{ borderColor: isValidQuestionCount ? 'blue.400' : 'gray.400' }}
+                    _focus={{ borderColor: isValidQuestionCount ? 'blue.500' : 'red.500', boxShadow: isValidQuestionCount ? '0 0 0 3px rgba(66, 153, 225, 0.2)' : '0 0 0 3px rgba(229, 62, 62, 0.2)' }}
+                    transition="all 0.2s"
+                  />
+                </motion.div>
+                <FormHelperText fontSize="sm" color="gray.600" marginTop={1}>
+                  You can generate up to 40 questions at a time.
+                </FormHelperText>
+                <AnimatePresence mode="wait">
+                  {questionCount && !isValidQuestionCount && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Text fontSize="sm" color="red.500" marginTop={1} fontWeight="medium">
+                        ⚠️ Please enter a number between {QUIZ_CONSTANTS.MIN_QUESTIONS} and {QUIZ_CONSTANTS.MAX_QUESTIONS}
+                      </Text>
+                    </motion.div>
+                  )}
+                  {isValidQuestionCount && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.3 }}
+                      key="time-estimate"
+                    >
+                      <Text fontSize="sm" color="blue.600" marginTop={1} fontWeight="semibold">
+                        ⏱️ Estimated time: {Math.ceil((questionCountNum * QUIZ_CONSTANTS.TIME_PER_QUESTION_SECONDS) / 60)} minutes
+                      </Text>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </FormControl>
+            </motion.div>
 
+            {/* Time Limit */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.32, duration: 0.4 }}
+            >
+              <FormControl>
+                <FormLabel fontSize="md" fontWeight="semibold" color="gray.700">
+                  Time Limit (in minutes)
+                </FormLabel>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileFocus={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Input
+                    type="number"
+                    value={timeLimit}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || (!isNaN(parseInt(value, 10)) && parseInt(value, 10) > 0)) {
+                        setTimeLimit(value);
+                      }
+                    }}
+                    placeholder="e.g., 30 (optional)"
+                    size="lg"
+                    min={1}
+                    borderRadius="xl"
+                    borderWidth={2}
+                    borderColor="blue.200"
+                    _hover={{ borderColor: 'blue.400' }}
+                    _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 3px rgba(66, 153, 225, 0.2)' }}
+                    transition="all 0.2s"
+                  />
+                </motion.div>
+                <FormHelperText fontSize="sm" color="gray.600" marginTop={1}>
+                  Set quiz duration in minutes (optional).
+                </FormHelperText>
+              </FormControl>
+            </motion.div>
+          </SimpleGrid>
+
+          {/* Instructions / Custom Prompt */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.4 }}
           >
-            <Box>
-              <Text fontSize="md" fontWeight="semibold" marginBottom={2} color="gray.700">
-                Additional Instructions {subject && subject !== SUBJECTS.OTHER && selectedSubtopics.length === 0 ? '(Enter subtopic here if not selected above)' : '(Optional)'}:
-              </Text>
-              <Text fontSize="sm" color="gray.600" marginBottom={2}>
+            <FormControl>
+              <FormLabel fontSize="md" fontWeight="semibold" color="gray.700">
+                Instructions / Custom Prompt {subject && subject !== SUBJECTS.OTHER && selectedSubtopics.length === 0 ? '(Enter subtopic here if not selected above)' : '(Optional)'}
+              </FormLabel>
+              <Text fontSize="sm" color="gray.600" marginBottom={3}>
                 {subject && subject !== SUBJECTS.OTHER && selectedSubtopics.length === 0
                   ? 'No subtopics selected. Enter a subtopic here, or provide specific instructions for question generation.'
-                  : 'Provide specific instructions for question generation (e.g., focus on practical examples, include real-world scenarios, etc.)'}
+                  : 'Provide specific instructions for question generation. Use the suggestions below as guidance.'}
               </Text>
               <motion.div
                 whileHover={{ scale: 1.01 }}
@@ -503,7 +676,7 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
                   onChange={(e) => setInstructions(e.target.value)}
                   placeholder="e.g., Focus on practical examples, include real-world scenarios, emphasize problem-solving..."
                   size="md"
-                  rows={4}
+                  rows={5}
                   borderRadius="xl"
                   borderWidth={2}
                   borderColor="blue.200"
@@ -513,6 +686,157 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
                   resize="vertical"
                 />
               </motion.div>
+              
+              {/* Smart Suggestions - Only show if subject is selected */}
+              {subject && subject !== SUBJECTS.OTHER && (
+                <Box marginTop={3} padding={4} bg="blue.50" borderRadius="lg" borderWidth={1} borderColor="blue.200">
+                  <Text fontSize="sm" fontWeight="semibold" color="blue.800" marginBottom={3}>
+                    💡 Smart Suggestions for {subject} (click to add):
+                  </Text>
+                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={2}>
+                    {getSubjectSuggestions(subject).map((suggestion, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Badge
+                        as="button"
+                        onClick={() => {
+                          const currentText = instructions.trim();
+                          const newText = currentText
+                            ? `${currentText}\n• ${suggestion}`
+                            : `• ${suggestion}`;
+                          setInstructions(newText);
+                        }}
+                        colorScheme="blue"
+                        variant="outline"
+                        padding={2}
+                        borderRadius="md"
+                        cursor="pointer"
+                        fontSize="xs"
+                        whiteSpace="normal"
+                        textAlign="left"
+                        width="100%"
+                        _hover={{ bg: 'blue.100', borderColor: 'blue.400' }}
+                        transition="all 0.2s"
+                      >
+                        {suggestion}
+                      </Badge>
+                    </motion.div>
+                    ))}
+                  </SimpleGrid>
+                </Box>
+              )}
+            </FormControl>
+          </motion.div>
+
+          {/* Additional Optional Fields - Two Column Layout */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45, duration: 0.4 }}
+          >
+            <Divider marginY={4} />
+            <Box>
+              <Text fontSize="lg" fontWeight="bold" color="gray.700" marginBottom={4}>
+                Additional Options
+              </Text>
+              
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                {/* Class/Grade Level */}
+                <FormControl>
+                  <FormLabel fontSize="md" fontWeight="semibold" color="gray.700">
+                    Class/Grade Level
+                  </FormLabel>
+                  <Select
+                    value={gradeLevel}
+                    onChange={(e) => setGradeLevel(e.target.value)}
+                    placeholder="Select class/grade (optional)"
+                    size="lg"
+                    borderRadius="xl"
+                    borderWidth={2}
+                    borderColor="blue.200"
+                    _hover={{ borderColor: 'blue.400' }}
+                    _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 3px rgba(66, 153, 225, 0.2)' }}
+                    transition="all 0.2s"
+                  >
+                    <option value="Class 1">Class 1</option>
+                    <option value="Class 2">Class 2</option>
+                    <option value="Class 3">Class 3</option>
+                    <option value="Class 4">Class 4</option>
+                    <option value="Class 5">Class 5</option>
+                    <option value="Class 6">Class 6</option>
+                    <option value="Class 7">Class 7</option>
+                    <option value="Class 8">Class 8</option>
+                    <option value="Class 9">Class 9</option>
+                    <option value="Class 10">Class 10</option>
+                    <option value="Class 11">Class 11</option>
+                    <option value="Class 12">Class 12</option>
+                  </Select>
+                  <FormHelperText fontSize="sm" color="gray.600" marginTop={1}>
+                    Specify the target class/grade level (optional)
+                  </FormHelperText>
+                </FormControl>
+
+                {/* Exam Style */}
+                <FormControl>
+                  <FormLabel fontSize="md" fontWeight="semibold" color="gray.700">
+                    Exam Style
+                  </FormLabel>
+                  <Select
+                    value={examStyle}
+                    onChange={(e) => setExamStyle(e.target.value)}
+                    placeholder="Select exam style (optional)"
+                    size="lg"
+                    borderRadius="xl"
+                    borderWidth={2}
+                    borderColor="blue.200"
+                    _hover={{ borderColor: 'blue.400' }}
+                    _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 3px rgba(66, 153, 225, 0.2)' }}
+                    transition="all 0.2s"
+                  >
+                    <option value="CBSE">CBSE</option>
+                    <option value="NCERT">NCERT</option>
+                    <option value="Olympiad">Olympiad</option>
+                    <option value="Competitive">Competitive</option>
+                    <option value="State Board">State Board</option>
+                    <option value="ICSE">ICSE</option>
+                  </Select>
+                  <FormHelperText fontSize="sm" color="gray.600" marginTop={1}>
+                    Choose exam style format (optional)
+                  </FormHelperText>
+                </FormControl>
+              </SimpleGrid>
+
+              {/* Sample Question or Pattern - Full Width */}
+              <FormControl marginTop={6}>
+                <FormLabel fontSize="md" fontWeight="semibold" color="gray.700">
+                  Sample Question or Pattern
+                </FormLabel>
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Textarea
+                    value={sampleQuestion}
+                    onChange={(e) => setSampleQuestion(e.target.value)}
+                    placeholder="e.g., What is the capital of India? (A) Mumbai (B) Delhi (C) Kolkata (D) Chennai"
+                    size="md"
+                    rows={3}
+                    borderRadius="xl"
+                    borderWidth={2}
+                    borderColor="blue.200"
+                    _hover={{ borderColor: 'blue.400' }}
+                    _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 3px rgba(66, 153, 225, 0.2)' }}
+                    transition="all 0.2s"
+                    resize="vertical"
+                  />
+                </motion.div>
+                <FormHelperText fontSize="sm" color="gray.600" marginTop={1}>
+                  Provide a sample question or pattern to guide question generation (optional)
+                </FormHelperText>
+              </FormControl>
             </Box>
           </motion.div>
 

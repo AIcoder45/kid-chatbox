@@ -17,6 +17,7 @@ export interface QuizResultRequest {
   explanation_of_mistakes: string;
   time_taken: number;
   score_percentage: number;
+  isLibraryQuiz?: boolean; // Optional flag to indicate if quiz is from library
 }
 
 export interface QuizResultResponse {

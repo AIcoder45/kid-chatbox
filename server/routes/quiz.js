@@ -104,12 +104,15 @@ router.post('/results', authenticateToken, checkModuleAccess('quiz'), async (req
       }
 
       // Increment quiz count for plan limits (only for AI-generated quizzes)
-      // Scheduled tests are handled separately
-      try {
-        await incrementQuizCount(userId);
-      } catch (incrementError) {
-        // Log error but don't fail the request
-        console.error('Error incrementing quiz count:', incrementError);
+      // Scheduled tests and library quizzes are handled separately
+      // Library quizzes don't count toward daily limits (check req.body.isLibraryQuiz)
+      if (!req.body.isLibraryQuiz) {
+        try {
+          await incrementQuizCount(userId);
+        } catch (incrementError) {
+          // Log error but don't fail the request
+          console.error('Error incrementing quiz count:', incrementError);
+        }
       }
 
       await client.query('COMMIT');

@@ -18,6 +18,7 @@ import {
   RecommendedTopicsResponse,
   User,
 } from '@/types';
+import { QuizConfig } from '@/types/quiz';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -237,6 +238,68 @@ export const quizApi = {
     };
   }> => {
     const response = await apiClient.get(`/quizzes/attempts/${attemptId}`);
+    return response.data;
+  },
+};
+
+/**
+ * Quiz Library API endpoints
+ */
+export const quizLibraryApi = {
+  /**
+   * Save quiz to library
+   */
+  saveToLibrary: async (data: {
+    title?: string;
+    description?: string;
+    subject: string;
+    subtopics?: string[];
+    difficulty: string;
+    age_group?: number;
+    language?: string;
+    question_count?: number;
+    time_limit?: number;
+    grade_level?: string;
+    exam_style?: string;
+    questions: unknown[];
+    config?: QuizConfig;
+  }): Promise<{ success: boolean; quiz: unknown; message: string }> => {
+    const response = await apiClient.post('/quiz-library', data);
+    return response.data;
+  },
+
+  /**
+   * Get quizzes from library
+   */
+  getQuizzes: async (params?: {
+    subject?: string;
+    difficulty?: string;
+    tags?: string[];
+    grade_level?: string;
+    exam_style?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ success: boolean; quizzes: unknown[]; count: number }> => {
+    const response = await apiClient.get('/quiz-library', { params });
+    return response.data;
+  },
+
+  /**
+   * Get quiz by ID
+   */
+  getQuizById: async (id: string): Promise<{ success: boolean; quiz: unknown }> => {
+    const response = await apiClient.get(`/quiz-library/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Get suggested quizzes based on subject and tags
+   */
+  getSuggestions: async (params: {
+    subject: string;
+    tags?: string[];
+  }): Promise<{ success: boolean; suggestions: unknown[] }> => {
+    const response = await apiClient.get('/quiz-library/suggestions', { params });
     return response.data;
   },
 };
