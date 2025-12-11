@@ -2,7 +2,7 @@
  * Quiz Timer Context - Provides timer state to Header and other components
  */
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 interface QuizTimerContextType {
   timeRemaining: number;
@@ -25,11 +25,11 @@ export const QuizTimerProvider: React.FC<QuizTimerProviderProps> = ({ children }
   const [totalTime, setTotalTime] = useState<number>(0);
   const [isQuizActive, setIsQuizActive] = useState<boolean>(false);
 
-  const setTimer = (remaining: number, total: number, isActive: boolean) => {
+  const setTimer = useCallback((remaining: number, total: number, isActive: boolean) => {
     setTimeRemaining(remaining);
     setTotalTime(total);
     setIsQuizActive(isActive);
-  };
+  }, []);
 
   return (
     <QuizTimerContext.Provider value={{ timeRemaining, totalTime, isQuizActive, setTimer }}>

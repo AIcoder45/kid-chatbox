@@ -6,26 +6,15 @@
 const nodemailer = require('nodemailer');
 
 /**
- * AI Logo SVG (Base64 encoded)
- * Simple AI-themed logo for email templates
- */
-const AI_LOGO_SVG = '<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#667eea;stop-opacity:1" /><stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" /></linearGradient></defs><circle cx="60" cy="60" r="55" fill="url(#logoGradient)"/><path d="M40 50 L60 30 L80 50 L70 50 L70 80 L50 80 L50 50 Z" fill="white" opacity="0.9"/><circle cx="50" cy="45" r="3" fill="#667eea"/><circle cx="70" cy="45" r="3" fill="#667eea"/><path d="M45 55 Q60 60 75 55" stroke="white" stroke-width="2" fill="none" opacity="0.9"/></svg>';
-
-/**
- * Convert SVG to base64 data URL for email embedding
- * URL encode the SVG first to ensure proper email client compatibility
- */
-const AI_LOGO_BASE64 = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(AI_LOGO_SVG)}`;
-
-/**
  * Get email header with logo
+ * Uses the robot emoji 🤖 from the home page
  * @returns {string} HTML header section with logo
  */
 function getEmailHeader() {
   return `
   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <img src="${AI_LOGO_BASE64}" alt="KidChatbox AI Logo" style="width: 80px; height: 80px; margin-bottom: 15px; display: inline-block;" />
-    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">KidChatbox</h1>
+    <div style="font-size: 80px; margin-bottom: 15px; display: inline-block;">🤖</div>
+    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Guru ID</h1>
     <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">AI-Powered Learning Platform</p>
   </div>
   `;
@@ -39,7 +28,7 @@ function getEmailFooter() {
   return `
   <div style="text-align: center; margin-top: 30px; padding: 20px; color: #666; font-size: 12px; border-top: 1px solid #e0e0e0;">
     <p style="margin: 5px 0;">This is an automated email. Please do not reply to this message.</p>
-    <p style="margin: 5px 0;">© ${new Date().getFullYear()} KidChatbox. All rights reserved.</p>
+    <p style="margin: 5px 0;">© ${new Date().getFullYear()} Guru ID. All rights reserved.</p>
     <p style="margin: 10px 0 0 0;">
       <a href="#" style="color: #667eea; text-decoration: none;">Privacy Policy</a> | 
       <a href="#" style="color: #667eea; text-decoration: none;">Terms of Service</a> | 
@@ -61,6 +50,12 @@ const SMTP_CONFIG = {
     pass: process.env.SMTP_PASSWORD || 'Greenwood@122003',
   },
 };
+
+/**
+ * Email sender address (from address for all emails)
+ * Can be overridden via environment variable
+ */
+const EMAIL_FROM_ADDRESS = process.env.EMAIL_FROM_ADDRESS || 'info@guruai.com';
 
 /**
  * Create reusable transporter instance
@@ -110,9 +105,9 @@ async function sendWelcomeEmail({ email, name, password }) {
   const transport = getTransporter();
 
   const mailOptions = {
-    from: `"KidChatbox Team" <${SMTP_CONFIG.auth.user}>`,
+    from: `"Guru ID Team" <${EMAIL_FROM_ADDRESS}>`,
     to: email,
-    subject: 'Welcome to KidChatbox - Your Account Credentials',
+    subject: 'Welcome to Guru ID - Your Account Credentials',
     html: getWelcomeEmailTemplate(name, email, password),
     text: getWelcomeEmailTextTemplate(name, email, password),
   };
@@ -144,7 +139,7 @@ function getWelcomeEmailTemplate(name, email, password) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to KidChatbox</title>
+  <title>Welcome to Guru ID</title>
 </head>
 <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
   <div style="background: #ffffff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
@@ -154,7 +149,7 @@ function getWelcomeEmailTemplate(name, email, password) {
     <p style="font-size: 16px; margin-bottom: 20px;">Dear ${name},</p>
     
     <p style="font-size: 16px; margin-bottom: 20px;">
-      Thank you for registering with KidChatbox! We're thrilled to have you join our learning community.
+      Thank you for registering with Guru ID! We're thrilled to have you join our learning community.
     </p>
     
     <p style="font-size: 16px; margin-bottom: 20px;">
@@ -173,7 +168,7 @@ function getWelcomeEmailTemplate(name, email, password) {
     </div>
     
     <p style="font-size: 16px; margin-bottom: 20px;">
-      Your account is currently pending approval. Once approved by our admin team, you'll be able to access all features of KidChatbox, including:
+      Your account is currently pending approval. Once approved by our admin team, you'll be able to access all features of Guru ID, including:
     </p>
     
     <ul style="font-size: 16px; margin-bottom: 20px; padding-left: 20px;">
@@ -198,7 +193,7 @@ function getWelcomeEmailTemplate(name, email, password) {
     
     <p style="font-size: 16px; margin-top: 30px;">
       Best regards,<br>
-      <strong style="color: #667eea;">The KidChatbox Team</strong>
+      <strong style="color: #667eea;">The Guru ID Team</strong>
     </p>
   </div>
   ${getEmailFooter()}
@@ -217,11 +212,11 @@ function getWelcomeEmailTemplate(name, email, password) {
  */
 function getWelcomeEmailTextTemplate(name, email, password) {
   return `
-Welcome to KidChatbox! 🎉
+Welcome to Guru ID! 🎉
 
 Dear ${name},
 
-Thank you for registering with KidChatbox! We're thrilled to have you join our learning community.
+Thank you for registering with Guru ID! We're thrilled to have you join our learning community.
 
 Your account has been successfully created. Below are your login credentials:
 
@@ -230,7 +225,7 @@ Password: ${password}
 
 ⚠️ Important: Please keep your credentials safe and secure. We recommend changing your password after your first login.
 
-Your account is currently pending approval. Once approved by our admin team, you'll be able to access all features of KidChatbox, including:
+Your account is currently pending approval. Once approved by our admin team, you'll be able to access all features of Guru ID, including:
 - Interactive quizzes and assessments
 - Personalized study materials
 - Progress tracking and analytics
@@ -244,11 +239,11 @@ If you have any questions or need assistance, please don't hesitate to contact o
 Once again, welcome aboard! We're excited to be part of your learning journey.
 
 Best regards,
-The KidChatbox Team
+The Guru ID Team
 
 ---
 This is an automated email. Please do not reply to this message.
-© ${new Date().getFullYear()} KidChatbox. All rights reserved.
+© ${new Date().getFullYear()} Guru ID. All rights reserved.
   `.trim();
 }
 
@@ -268,9 +263,9 @@ async function sendApprovalEmail({ email, name }) {
   const transport = getTransporter();
 
   const mailOptions = {
-    from: `"KidChatbox Team" <${SMTP_CONFIG.auth.user}>`,
+    from: `"Guru ID Team" <${EMAIL_FROM_ADDRESS}>`,
     to: email,
-    subject: '🎉 Your KidChatbox Account Has Been Approved!',
+    subject: '🎉 Your Guru ID Account Has Been Approved!',
     html: getApprovalEmailTemplate(name),
     text: getApprovalEmailTextTemplate(name),
   };
@@ -300,7 +295,7 @@ function getApprovalEmailTemplate(name) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Account Approved - KidChatbox</title>
+  <title>Account Approved - Guru ID</title>
 </head>
 <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
   <div style="background: #ffffff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
@@ -317,7 +312,7 @@ function getApprovalEmailTemplate(name) {
     <p style="font-size: 16px; margin-bottom: 20px;">Dear ${name},</p>
     
     <p style="font-size: 16px; margin-bottom: 20px;">
-      Great news! Your KidChatbox account has been <strong style="color: #28a745;">approved</strong> by our admin team. You can now access all the amazing features of our platform!
+      Great news! Your Guru ID account has been <strong style="color: #28a745;">approved</strong> by our admin team. You can now access all the amazing features of our platform!
     </p>
     
     <div style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-left: 4px solid #667eea; padding: 20px; margin: 25px 0; border-radius: 4px;">
@@ -343,7 +338,7 @@ function getApprovalEmailTemplate(name) {
     
     <p style="font-size: 16px; margin-top: 30px;">
       Best regards,<br>
-      <strong style="color: #667eea;">The KidChatbox Team</strong>
+      <strong style="color: #667eea;">The Guru ID Team</strong>
     </p>
   </div>
   ${getEmailFooter()}
@@ -364,7 +359,7 @@ Account Approved! ✅
 
 Dear ${name},
 
-Great news! Your KidChatbox account has been approved by our admin team. You can now access all the amazing features of our platform!
+Great news! Your Guru ID account has been approved by our admin team. You can now access all the amazing features of our platform!
 
 What's Next?
 - Access interactive quizzes and assessments
@@ -376,11 +371,11 @@ What's Next?
 We're excited to be part of your learning journey and can't wait to see you excel!
 
 Best regards,
-The KidChatbox Team
+The Guru ID Team
 
 ---
 This is an automated email. Please do not reply to this message.
-© ${new Date().getFullYear()} KidChatbox. All rights reserved.
+© ${new Date().getFullYear()} Guru ID. All rights reserved.
   `.trim();
 }
 
@@ -406,7 +401,7 @@ async function sendQuizCompletionEmail({ email, name, subject, subtopic, scorePe
   const transport = getTransporter();
 
   const mailOptions = {
-    from: `"KidChatbox Team" <${SMTP_CONFIG.auth.user}>`,
+    from: `"Guru ID Team" <${EMAIL_FROM_ADDRESS}>`,
     to: email,
     subject: `🎯 Quiz Completed: ${subject} - ${Math.round(scorePercentage)}% Score`,
     html: getQuizCompletionEmailTemplate(name, subject, subtopic, scorePercentage, correctAnswers, totalQuestions, timeTaken),
@@ -451,7 +446,7 @@ function getQuizCompletionEmailTemplate(name, subject, subtopic, scorePercentage
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quiz Completed - KidChatbox</title>
+  <title>Quiz Completed - Guru ID</title>
 </head>
 <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
   <div style="background: #ffffff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
@@ -518,7 +513,7 @@ function getQuizCompletionEmailTemplate(name, subject, subtopic, scorePercentage
     
     <p style="font-size: 16px; margin-top: 30px;">
       Best regards,<br>
-      <strong style="color: #667eea;">The KidChatbox Team</strong>
+      <strong style="color: #667eea;">The Guru ID Team</strong>
     </p>
   </div>
   ${getEmailFooter()}
@@ -563,11 +558,11 @@ ${passed ? '🎉 Excellent Work! You\'ve passed the quiz! Keep up the great work
 Keep practicing and improving! Your progress is being tracked, and you can review your performance anytime in your dashboard.
 
 Best regards,
-The KidChatbox Team
+The Guru ID Team
 
 ---
 This is an automated email. Please do not reply to this message.
-© ${new Date().getFullYear()} KidChatbox. All rights reserved.
+© ${new Date().getFullYear()} Guru ID. All rights reserved.
   `.trim();
 }
 

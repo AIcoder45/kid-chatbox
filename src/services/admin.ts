@@ -179,6 +179,13 @@ export const adminApi = {
   },
 
   /**
+   * Delete user
+   */
+  deleteUser: async (id: string): Promise<void> => {
+    await apiClient.delete(`/admin/users/${id}`);
+  },
+
+  /**
    * Get all roles
    */
   getRoles: async (): Promise<{ roles: Role[] }> => {

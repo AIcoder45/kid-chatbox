@@ -1,0 +1,56 @@
+---
+alwaysApply: true
+---
+Build the project and report build status
+
+Command: Build the project (production and dev builds) and tell me whether the build succeeds or fails. If it fails, show the full error log and the likely cause.
+
+Check: exit code, error stack, missing files, dependency errors.
+
+Run the app locally and confirm it's reachable
+
+Command: Start the app locally (dev server) and confirm the URL and port where it's serving. Verify the main page loads (HTTP 200) and list any runtime errors.
+
+Check: server URL, HTTP status, server console.
+
+Open browser console and list client-side errors
+
+Command: Open the app in a browser environment and capture all console warnings/errors. Group them by severity and give suggested fixes for each top error.
+
+Check: uncaught exceptions, React warnings, CORS, missing assets.
+
+Run tests and summarize results
+
+Command: Run the test suite (unit, integration, e2e where available). Summarize pass/fail counts, show failing tests with stack traces, and propose likely fixes for each failing test.
+
+Check: flaky tests, timeouts, missing mocks.
+
+Run linters and formatters; fix auto-fixable issues
+
+Command: Run linters (ESLint/TSLint/stylelint) and formatters (Prettier). Apply auto-fixable changes, list remaining lint issues, and explain why each remaining issue should be fixed manually.
+
+Check: rule violations, style inconsistencies.
+
+Check dependencies and security issues
+
+Command: Audit dependencies for vulnerabilities (npm/yarn/pip audit). List critical/major vulnerabilities, recommend immediate remediation (upgrade, patch, remove), and propose a safe upgrade path.
+
+Check: CVE severity, transitive dependency issues.
+
+Run build and runtime performance checks
+
+Command: Analyze bundle size and runtime perf: produce a bundle-size report, list largest modules, and run a Lighthouse or similar perf audit. Recommend top 3 actions to reduce load or improve Time To Interactive.
+
+Check: large chunks, unused code, long tasks.
+
+Run accessibility and responsive checks
+
+Command: Run automated accessibility checks (axe/Lighthouse) and basic responsive tests across common breakpoints. List accessibility violations with precise locations and quick fixes.
+
+Check: color contrast, ARIA roles, keyboard nav, viewport/layout issues.
+
+Run the app in multiple browsers and list differences
+
+Command: Open the app in Chrome, Firefox, and Safari (latest stable). Capture console logs, layout differences, and any feature incompatibilities. Highlight differences that affect functionality.
+
+Check: CSS prefixing, JS API support, cookie/CORS behavior.

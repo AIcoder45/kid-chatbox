@@ -268,18 +268,29 @@ router.get('/my-tests', async (req, res, next) => {
 /**
  * Get scheduled test by ID
  * GET /api/scheduled-tests/:id
+ * Accessible by admins OR students eligible for the test
  */
-router.get('/:id', checkPermission('manage_quizzes'), async (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
+    const userPermissions = req.user.permissions || [];
 
+    // Check if user has admin permission
+    const isAdmin = userPermissions.includes('manage_quizzes');
+
+    // Get scheduled test
     const result = await pool.query(
       `SELECT 
         st.*,
+        q.id as quiz_id,
         q.name as quiz_name,
         q.description as quiz_description,
         q.age_group as quiz_age_group,
         q.difficulty as quiz_difficulty,
+        q.number_of_questions,
+        q.passing_percentage,
+        q.time_limit,
         u.name as scheduled_by_name,
         u.email as scheduled_by_email
       FROM scheduled_tests st
@@ -296,9 +307,99 @@ router.get('/:id', checkPermission('manage_quizzes'), async (req, res, next) => 
       });
     }
 
-    // Get plan details if planIds exist
     const scheduledTest = result.rows[0];
-    if (scheduledTest.plan_ids && scheduledTest.plan_ids.length > 0) {
+
+    // If not admin, check if user is eligible for this test
+    if (!isAdmin) {
+      const now = new Date();
+      
+      // Check if test is visible
+      const visibleFrom = new Date(scheduledTest.visible_from);
+      if (visibleFrom > now) {
+        return res.status(403).json({
+          success: false,
+          message: 'This test is not available yet. Please check back later.',
+        });
+      }
+
+      // Check if test has expired
+      if (scheduledTest.visible_until) {
+        const visibleUntil = new Date(scheduledTest.visible_until);
+        if (visibleUntil < now) {
+          return res.status(403).json({
+            success: false,
+            message: 'This test has expired.',
+          });
+        }
+      }
+
+      // Check if test status allows access
+      if (!['scheduled', 'active'].includes(scheduledTest.status)) {
+        return res.status(403).json({
+          success: false,
+          message: `This test is not available. Status: ${scheduledTest.status}`,
+        });
+      }
+
+      // Check if user is directly assigned or has access through plan
+      let isEligible = false;
+      let eligibilityReason = '';
+
+      // Check direct user assignment using PostgreSQL array operator
+      if (scheduledTest.user_ids && Array.isArray(scheduledTest.user_ids) && scheduledTest.user_ids.length > 0) {
+        try {
+          const userCheckResult = await pool.query(
+            'SELECT $1::uuid = ANY($2::uuid[]) as is_assigned',
+            [userId, scheduledTest.user_ids]
+          );
+          isEligible = userCheckResult.rows[0]?.is_assigned || false;
+          if (isEligible) {
+            eligibilityReason = 'directly assigned';
+          }
+        } catch (err) {
+          console.error('Error checking user assignment:', err);
+        }
+      }
+
+      // Check plan-based access using PostgreSQL array operator
+      if (!isEligible && scheduledTest.plan_ids && Array.isArray(scheduledTest.plan_ids) && scheduledTest.plan_ids.length > 0) {
+        try {
+          const planCheckResult = await pool.query(
+            `SELECT EXISTS(
+              SELECT 1 FROM user_plans 
+              WHERE user_id = $1::uuid
+              AND plan_id = ANY($2::uuid[])
+            ) as has_plan_access`,
+            [userId, scheduledTest.plan_ids]
+          );
+          isEligible = planCheckResult.rows[0]?.has_plan_access || false;
+          if (isEligible) {
+            eligibilityReason = 'plan-based access';
+          }
+        } catch (err) {
+          console.error('Error checking plan access:', err);
+        }
+      }
+
+      // If no user_ids or plan_ids specified, deny access (test must be assigned)
+      if (!isEligible && (!scheduledTest.user_ids || scheduledTest.user_ids.length === 0) && 
+          (!scheduledTest.plan_ids || scheduledTest.plan_ids.length === 0)) {
+        return res.status(403).json({
+          success: false,
+          message: 'This scheduled test has no assigned users or plans.',
+        });
+      }
+
+      if (!isEligible) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have access to this scheduled test. Please contact your administrator.',
+        });
+      }
+    }
+
+    // Get plan details if planIds exist (only for admins)
+    if (isAdmin && scheduledTest.plan_ids && scheduledTest.plan_ids.length > 0) {
       const plansResult = await pool.query(
         `SELECT id, name, description FROM plans WHERE id = ANY($1::uuid[])`,
         [scheduledTest.plan_ids]
@@ -306,8 +407,8 @@ router.get('/:id', checkPermission('manage_quizzes'), async (req, res, next) => 
       scheduledTest.plans = plansResult.rows;
     }
 
-    // Get user details if userIds exist
-    if (scheduledTest.user_ids && scheduledTest.user_ids.length > 0) {
+    // Get user details if userIds exist (only for admins)
+    if (isAdmin && scheduledTest.user_ids && scheduledTest.user_ids.length > 0) {
       const usersResult = await pool.query(
         `SELECT id, name, email FROM users WHERE id = ANY($1::uuid[])`,
         [scheduledTest.user_ids]

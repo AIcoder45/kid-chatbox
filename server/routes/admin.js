@@ -5,15 +5,54 @@
 
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { checkPermission, checkRole } = require('../middleware/rbac');
 const { getFreemiumPlan, assignPlanToUser } = require('../utils/plans');
+const { sendWelcomeEmail } = require('../utils/email');
 
 const router = express.Router();
 
 // All admin routes require authentication
 router.use(authenticateToken);
+
+/**
+ * Generate a secure random password using cryptographically secure random number generator
+ * @param {number} length - Password length (default: 12)
+ * @returns {string} Generated password
+ */
+function generatePassword(length = 12) {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*';
+  const allChars = uppercase + lowercase + numbers + symbols;
+
+  // Generate cryptographically secure random bytes
+  const randomBytes = crypto.randomBytes(length);
+  
+  // Ensure password has at least one of each type
+  let password = '';
+  password += uppercase[randomBytes[0] % uppercase.length];
+  password += lowercase[randomBytes[1] % lowercase.length];
+  password += numbers[randomBytes[2] % numbers.length];
+  password += symbols[randomBytes[3] % symbols.length];
+
+  // Fill the rest with random characters using secure random
+  for (let i = password.length; i < length; i++) {
+    password += allChars[randomBytes[i] % allChars.length];
+  }
+
+  // Shuffle the password using Fisher-Yates algorithm with secure random
+  const passwordArray = password.split('');
+  for (let i = passwordArray.length - 1; i > 0; i--) {
+    const j = randomBytes[i] % (i + 1);
+    [passwordArray[i], passwordArray[j]] = [passwordArray[j], passwordArray[i]];
+  }
+
+  return passwordArray.join('');
+}
 
 /**
  * Get all users with filters
@@ -431,6 +470,41 @@ router.put('/users/:id/suspend', checkPermission('manage_users'), async (req, re
 });
 
 /**
+ * Delete user
+ * DELETE /api/admin/users/:id
+ */
+router.delete('/users/:id', checkPermission('manage_users'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Delete user roles first (foreign key constraint)
+    await pool.query('DELETE FROM user_roles WHERE user_id = $1', [id]);
+
+    // Delete user plan assignments
+    await pool.query('DELETE FROM user_plans WHERE user_id = $1', [id]);
+
+    // Delete user
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * Get all roles
  * GET /api/admin/roles
  */
@@ -513,11 +587,9 @@ router.post('/users/create', checkPermission('manage_users'), async (req, res, n
       });
     }
 
-    // Hash password if provided
-    let passwordHash = null;
-    if (password) {
-      passwordHash = await bcrypt.hash(password, 10);
-    }
+    // Generate password if not provided
+    const userPassword = password || generatePassword(12);
+    const passwordHash = await bcrypt.hash(userPassword, 10);
 
     // Create user
     const userStatus = status || 'pending';
@@ -607,9 +679,22 @@ router.post('/users/create', checkPermission('manage_users'), async (req, res, n
       );
     }
 
+    // Send welcome email with credentials
+    try {
+      await sendWelcomeEmail({
+        email: user.email,
+        name: user.name,
+        password: userPassword, // Send plain password in email
+      });
+    } catch (emailError) {
+      // Log error but don't fail user creation if email fails
+      console.error(`Failed to send welcome email to ${user.email}:`, emailError.message);
+      // User creation still succeeds even if email fails
+    }
+
     res.status(201).json({
       success: true,
-      message: 'User created successfully',
+      message: 'User created successfully. Welcome email sent.',
       user,
     });
   } catch (error) {

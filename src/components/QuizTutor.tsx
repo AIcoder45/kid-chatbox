@@ -75,6 +75,12 @@ export const QuizTutor: React.FC = () => {
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
   const pendingNavigationRef = useRef<(() => void) | null>(null);
   const isSubmittingRef = useRef(false);
+  const navigateRef = useRef(navigate);
+  
+  // Update navigate ref when navigate changes
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   const handleConfigComplete = useCallback(async (quizConfig: {
     subject: string;
@@ -164,8 +170,7 @@ export const QuizTutor: React.FC = () => {
       totalTimeRef.current = totalTime;
       beepPlayedRef.current = false;
       setTimeRemaining(totalTime);
-      // Update context timer
-      setTimer(totalTime, totalTime, true);
+      // Don't call setTimer here - it will be called in useEffect when phase changes
       setAllAnswerResults([]);
       setImprovementTips([]);
       setQuizStartTime(Date.now());
@@ -253,8 +258,7 @@ export const QuizTutor: React.FC = () => {
 
     setAllAnswerResults(answerResults);
     setPhase('loading');
-    // Update context - quiz ended
-    setTimer(0, totalTimeRef.current, false);
+    // Don't call setTimer here - useEffect will handle it when phase changes
 
     const timeTaken = Math.floor((Date.now() - quizStartTime) / 1000);
     const correctCount = answerResults.filter((r) => r.isCorrect).length;
@@ -392,13 +396,14 @@ export const QuizTutor: React.FC = () => {
   }, [phase]);
 
   /**
-   * Intercept link clicks during quiz
+   * Intercept link clicks and browser navigation during quiz
    */
   useEffect(() => {
     if (phase !== 'quiz') {
       return;
     }
 
+    // Intercept link clicks
     const handleLinkClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const link = target.closest('a[href]') as HTMLAnchorElement;
@@ -414,19 +419,34 @@ export const QuizTutor: React.FC = () => {
 
           // Store navigation function
           pendingNavigationRef.current = () => {
-            navigate(linkUrl.pathname + linkUrl.search);
+            navigateRef.current(linkUrl.pathname + linkUrl.search);
           };
           onConfirmOpen();
         }
       }
     };
 
+    // Intercept browser back/forward button
+    const handlePopState = (e: PopStateEvent) => {
+      if (phase === 'quiz' && !isSubmittingRef.current) {
+        e.preventDefault();
+        // Push current state back to prevent navigation
+        window.history.pushState(null, '', location.pathname + location.search);
+        onConfirmOpen();
+      }
+    };
+
+    // Push state to track navigation attempts
+    window.history.pushState(null, '', location.pathname + location.search);
+
     document.addEventListener('click', handleLinkClick, true);
+    window.addEventListener('popstate', handlePopState);
 
     return () => {
       document.removeEventListener('click', handleLinkClick, true);
+      window.removeEventListener('popstate', handlePopState);
     };
-  }, [phase, location.pathname, navigate, onConfirmOpen]);
+  }, [phase, location.pathname, location.search, onConfirmOpen]);
 
   /**
    * Play beep sound
@@ -466,6 +486,23 @@ export const QuizTutor: React.FC = () => {
       console.warn('Could not play beep sound:', err);
     }
   }, []);
+
+  // Sync timer context when phase changes (only on phase change, not on every timeRemaining update)
+  useEffect(() => {
+    // Use setTimeout to defer the update to after render completes
+    const timeoutId = setTimeout(() => {
+      if (phase === 'quiz' && totalTimeRef.current > 0) {
+        // Update context timer when quiz phase starts - use ref value to ensure we have the latest
+        setTimer(totalTimeRef.current, totalTimeRef.current, true);
+      } else if (phase !== 'quiz') {
+        // Reset timer context when not in quiz phase
+        setTimer(0, totalTimeRef.current, false);
+      }
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]); // Only depend on phase, setTimer is stable now
 
   // Timer effect with beep alert at 20% time remaining
   useEffect(() => {
@@ -509,11 +546,10 @@ export const QuizTutor: React.FC = () => {
   useEffect(() => {
     if (phase === 'quiz' && timeRemaining === 0 && questions.length > 0) {
       handleSubmitQuiz();
-      // Update context - quiz ended
-      setTimer(0, totalTimeRef.current, false);
+      // Don't call setTimer here - useEffect will handle it when phase changes
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, timeRemaining, questions.length, setTimer]);
+  }, [phase, timeRemaining, questions.length]);
 
   const handleAnswerSelect = useCallback(
     (questionNumber: number, answer: 'A' | 'B' | 'C' | 'D') => {
@@ -569,7 +605,7 @@ export const QuizTutor: React.FC = () => {
       if (visibleFrom > now) {
         setError('This test is not available yet. Please check back later.');
         setPhase('config');
-        hasLoadedScheduledTestRef.current = false;
+        // Don't reset hasLoadedScheduledTestRef to prevent infinite retries
         return;
       }
 
@@ -579,7 +615,7 @@ export const QuizTutor: React.FC = () => {
         if (visibleUntil < now) {
           setError('This test has expired.');
           setPhase('config');
-          hasLoadedScheduledTestRef.current = false;
+          // Don't reset hasLoadedScheduledTestRef to prevent infinite retries
           return;
         }
       }
@@ -709,15 +745,24 @@ export const QuizTutor: React.FC = () => {
       setAllAnswerResults([]);
       setImprovementTips([]);
       setResultSaved(false);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to load scheduled test:', err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load scheduled test. Please try again.'
-      );
+      let errorMessage = 'Failed to load scheduled test. Please try again.';
+      
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { data?: { message?: string } } };
+        if (axiosError.response?.data?.message) {
+          errorMessage = axiosError.response.data.message;
+        } else if (axiosError.response?.data && typeof axiosError.response.data === 'object' && 'message' in axiosError.response.data) {
+          errorMessage = String(axiosError.response.data.message);
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       setPhase('config');
-      hasLoadedScheduledTestRef.current = false;
+      // Don't reset hasLoadedScheduledTestRef to prevent infinite retries
     }
   }, []);
 
@@ -728,11 +773,12 @@ export const QuizTutor: React.FC = () => {
     const attemptId = searchParams.get('attemptId');
     const resume = searchParams.get('resume') === 'true';
 
-    if (testId && phase === 'config' && !hasLoadedScheduledTestRef.current) {
+    // Only load if we have a testId, are in config phase, haven't loaded yet, and no error
+    if (testId && phase === 'config' && !hasLoadedScheduledTestRef.current && !error) {
       setScheduledTestId(testId);
       loadScheduledTest(testId, attemptId || null, resume);
     }
-  }, [location.search, phase, loadScheduledTest]);
+  }, [location.search, phase, loadScheduledTest, error]);
 
   // Auto-start quiz if config is passed from Study mode (only for AI-generated quizzes, not scheduled tests)
   useEffect(() => {
@@ -763,12 +809,12 @@ export const QuizTutor: React.FC = () => {
     totalTimeRef.current = totalTime;
     beepPlayedRef.current = false;
     setTimeRemaining(totalTime);
-    setTimer(totalTime, totalTime, true);
+    // Don't call setTimer here - it will be called in useEffect when phase changes
     setAllAnswerResults([]);
     setImprovementTips([]);
     setQuizStartTime(Date.now());
     setResultSaved(false);
-  }, [setTimer]);
+  }, []);
 
   const score = allAnswerResults.filter((r) => r.isCorrect).length;
   const answeredCount = answers.size;
@@ -828,28 +874,73 @@ export const QuizTutor: React.FC = () => {
           </Box>
         </Box>
         {/* Confirmation Modal for Navigation */}
-        <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
-          <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-          <ModalContent>
-            <ModalHeader>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_TITLE}</ModalHeader>
-            <ModalCloseButton />
+        <Modal 
+          isOpen={isConfirmOpen} 
+          onClose={handleCancelLeave} 
+          isCentered
+          closeOnOverlayClick={false}
+          closeOnEsc={false}
+        >
+          <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+          <ModalContent maxW="500px">
+            <ModalHeader color="red.500" fontSize="xl" fontWeight="bold">
+              ⚠️ Quiz in Progress
+            </ModalHeader>
+            <ModalCloseButton isDisabled />
             <ModalBody>
-              <Text>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_MESSAGE}</Text>
-              {config && (
-                <Alert status="info" marginTop={4}>
+              <VStack spacing={4} align="stretch">
+                <Alert status="warning" borderRadius="md">
                   <AlertIcon />
-                  <AlertDescription>
-                    You have answered {answers.size} out of {config.questionCount} questions.
+                  <AlertTitle>You cannot leave during the quiz!</AlertTitle>
+                  <AlertDescription mt={2}>
+                    You have an active quiz in progress. You must submit your quiz before leaving this page.
                   </AlertDescription>
                 </Alert>
-              )}
+                
+                {config && (
+                  <Box p={4} bg="blue.50" borderRadius="md" borderLeft="4px solid" borderColor="blue.500">
+                    <Text fontWeight="semibold" mb={2} color="blue.700">
+                      Your Progress:
+                    </Text>
+                    <Text fontSize="lg" color="blue.600">
+                      📝 Answered: <strong>{answers.size}</strong> out of <strong>{config.questionCount}</strong> questions
+                    </Text>
+                    {answers.size < config.questionCount && (
+                      <Text fontSize="sm" color="blue.500" mt={2}>
+                        ⏱️ {config.questionCount - answers.size} question{config.questionCount - answers.size !== 1 ? 's' : ''} remaining
+                      </Text>
+                    )}
+                  </Box>
+                )}
+
+                <Alert status="info" borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription>
+                    <Text fontWeight="semibold" mb={1}>What happens if you leave?</Text>
+                    <Text fontSize="sm">
+                      Your quiz will be automatically submitted with your current answers. 
+                      {answers.size === 0 && ' You haven\'t answered any questions yet!'}
+                    </Text>
+                  </AlertDescription>
+                </Alert>
+              </VStack>
             </ModalBody>
             <ModalFooter>
-              <Button variant="ghost" mr={3} onClick={handleCancelLeave}>
-                Cancel
+              <Button 
+                variant="outline" 
+                mr={3} 
+                onClick={handleCancelLeave}
+                colorScheme="gray"
+              >
+                Stay on Quiz
               </Button>
-              <Button colorScheme="blue" onClick={handleConfirmLeave}>
-                Submit & Leave
+              <Button 
+                colorScheme="red" 
+                onClick={handleConfirmLeave}
+                isLoading={isSubmittingRef.current}
+                loadingText="Submitting..."
+              >
+                Submit Quiz & Leave
               </Button>
             </ModalFooter>
           </ModalContent>
@@ -871,28 +962,73 @@ export const QuizTutor: React.FC = () => {
       <>
         <QuizLoading loadingType={loadingType} />
         {/* Confirmation Modal for Navigation */}
-        <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
-          <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-          <ModalContent>
-            <ModalHeader>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_TITLE}</ModalHeader>
-            <ModalCloseButton />
+        <Modal 
+          isOpen={isConfirmOpen} 
+          onClose={handleCancelLeave} 
+          isCentered
+          closeOnOverlayClick={false}
+          closeOnEsc={false}
+        >
+          <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+          <ModalContent maxW="500px">
+            <ModalHeader color="red.500" fontSize="xl" fontWeight="bold">
+              ⚠️ Quiz in Progress
+            </ModalHeader>
+            <ModalCloseButton isDisabled />
             <ModalBody>
-              <Text>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_MESSAGE}</Text>
-              {config && (
-                <Alert status="info" marginTop={4}>
+              <VStack spacing={4} align="stretch">
+                <Alert status="warning" borderRadius="md">
                   <AlertIcon />
-                  <AlertDescription>
-                    You have answered {answers.size} out of {config.questionCount} questions.
+                  <AlertTitle>You cannot leave during the quiz!</AlertTitle>
+                  <AlertDescription mt={2}>
+                    You have an active quiz in progress. You must submit your quiz before leaving this page.
                   </AlertDescription>
                 </Alert>
-              )}
+                
+                {config && (
+                  <Box p={4} bg="blue.50" borderRadius="md" borderLeft="4px solid" borderColor="blue.500">
+                    <Text fontWeight="semibold" mb={2} color="blue.700">
+                      Your Progress:
+                    </Text>
+                    <Text fontSize="lg" color="blue.600">
+                      📝 Answered: <strong>{answers.size}</strong> out of <strong>{config.questionCount}</strong> questions
+                    </Text>
+                    {answers.size < config.questionCount && (
+                      <Text fontSize="sm" color="blue.500" mt={2}>
+                        ⏱️ {config.questionCount - answers.size} question{config.questionCount - answers.size !== 1 ? 's' : ''} remaining
+                      </Text>
+                    )}
+                  </Box>
+                )}
+
+                <Alert status="info" borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription>
+                    <Text fontWeight="semibold" mb={1}>What happens if you leave?</Text>
+                    <Text fontSize="sm">
+                      Your quiz will be automatically submitted with your current answers. 
+                      {answers.size === 0 && ' You haven\'t answered any questions yet!'}
+                    </Text>
+                  </AlertDescription>
+                </Alert>
+              </VStack>
             </ModalBody>
             <ModalFooter>
-              <Button variant="ghost" mr={3} onClick={handleCancelLeave}>
-                Cancel
+              <Button 
+                variant="outline" 
+                mr={3} 
+                onClick={handleCancelLeave}
+                colorScheme="gray"
+              >
+                Stay on Quiz
               </Button>
-              <Button colorScheme="blue" onClick={handleConfirmLeave}>
-                Submit & Leave
+              <Button 
+                colorScheme="red" 
+                onClick={handleConfirmLeave}
+                isLoading={isSubmittingRef.current}
+                loadingText="Submitting..."
+              >
+                Submit Quiz & Leave
               </Button>
             </ModalFooter>
           </ModalContent>
@@ -976,28 +1112,73 @@ export const QuizTutor: React.FC = () => {
           </Box>
         </motion.div>
         {/* Confirmation Modal for Navigation */}
-        <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
-          <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-          <ModalContent>
-            <ModalHeader>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_TITLE}</ModalHeader>
-            <ModalCloseButton />
+        <Modal 
+          isOpen={isConfirmOpen} 
+          onClose={handleCancelLeave} 
+          isCentered
+          closeOnOverlayClick={false}
+          closeOnEsc={false}
+        >
+          <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+          <ModalContent maxW="500px">
+            <ModalHeader color="red.500" fontSize="xl" fontWeight="bold">
+              ⚠️ Quiz in Progress
+            </ModalHeader>
+            <ModalCloseButton isDisabled />
             <ModalBody>
-              <Text>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_MESSAGE}</Text>
-              {config && (
-                <Alert status="info" marginTop={4}>
+              <VStack spacing={4} align="stretch">
+                <Alert status="warning" borderRadius="md">
                   <AlertIcon />
-                  <AlertDescription>
-                    You have answered {answers.size} out of {config.questionCount} questions.
+                  <AlertTitle>You cannot leave during the quiz!</AlertTitle>
+                  <AlertDescription mt={2}>
+                    You have an active quiz in progress. You must submit your quiz before leaving this page.
                   </AlertDescription>
                 </Alert>
-              )}
+                
+                {config && (
+                  <Box p={4} bg="blue.50" borderRadius="md" borderLeft="4px solid" borderColor="blue.500">
+                    <Text fontWeight="semibold" mb={2} color="blue.700">
+                      Your Progress:
+                    </Text>
+                    <Text fontSize="lg" color="blue.600">
+                      📝 Answered: <strong>{answers.size}</strong> out of <strong>{config.questionCount}</strong> questions
+                    </Text>
+                    {answers.size < config.questionCount && (
+                      <Text fontSize="sm" color="blue.500" mt={2}>
+                        ⏱️ {config.questionCount - answers.size} question{config.questionCount - answers.size !== 1 ? 's' : ''} remaining
+                      </Text>
+                    )}
+                  </Box>
+                )}
+
+                <Alert status="info" borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription>
+                    <Text fontWeight="semibold" mb={1}>What happens if you leave?</Text>
+                    <Text fontSize="sm">
+                      Your quiz will be automatically submitted with your current answers. 
+                      {answers.size === 0 && ' You haven\'t answered any questions yet!'}
+                    </Text>
+                  </AlertDescription>
+                </Alert>
+              </VStack>
             </ModalBody>
             <ModalFooter>
-              <Button variant="ghost" mr={3} onClick={handleCancelLeave}>
-                Cancel
+              <Button 
+                variant="outline" 
+                mr={3} 
+                onClick={handleCancelLeave}
+                colorScheme="gray"
+              >
+                Stay on Quiz
               </Button>
-              <Button colorScheme="blue" onClick={handleConfirmLeave}>
-                Submit & Leave
+              <Button 
+                colorScheme="red" 
+                onClick={handleConfirmLeave}
+                isLoading={isSubmittingRef.current}
+                loadingText="Submitting..."
+              >
+                Submit Quiz & Leave
               </Button>
             </ModalFooter>
           </ModalContent>
@@ -1031,28 +1212,73 @@ export const QuizTutor: React.FC = () => {
           </Box>
         </motion.div>
         {/* Confirmation Modal for Navigation */}
-        <Modal isOpen={isConfirmOpen} onClose={handleCancelLeave} isCentered>
-          <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-          <ModalContent>
-            <ModalHeader>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_TITLE}</ModalHeader>
-            <ModalCloseButton />
+        <Modal 
+          isOpen={isConfirmOpen} 
+          onClose={handleCancelLeave} 
+          isCentered
+          closeOnOverlayClick={false}
+          closeOnEsc={false}
+        >
+          <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+          <ModalContent maxW="500px">
+            <ModalHeader color="red.500" fontSize="xl" fontWeight="bold">
+              ⚠️ Quiz in Progress
+            </ModalHeader>
+            <ModalCloseButton isDisabled />
             <ModalBody>
-              <Text>{MESSAGES.QUIZ_LEAVE_CONFIRMATION_MESSAGE}</Text>
-              {config && (
-                <Alert status="info" marginTop={4}>
+              <VStack spacing={4} align="stretch">
+                <Alert status="warning" borderRadius="md">
                   <AlertIcon />
-                  <AlertDescription>
-                    You have answered {answers.size} out of {config.questionCount} questions.
+                  <AlertTitle>You cannot leave during the quiz!</AlertTitle>
+                  <AlertDescription mt={2}>
+                    You have an active quiz in progress. You must submit your quiz before leaving this page.
                   </AlertDescription>
                 </Alert>
-              )}
+                
+                {config && (
+                  <Box p={4} bg="blue.50" borderRadius="md" borderLeft="4px solid" borderColor="blue.500">
+                    <Text fontWeight="semibold" mb={2} color="blue.700">
+                      Your Progress:
+                    </Text>
+                    <Text fontSize="lg" color="blue.600">
+                      📝 Answered: <strong>{answers.size}</strong> out of <strong>{config.questionCount}</strong> questions
+                    </Text>
+                    {answers.size < config.questionCount && (
+                      <Text fontSize="sm" color="blue.500" mt={2}>
+                        ⏱️ {config.questionCount - answers.size} question{config.questionCount - answers.size !== 1 ? 's' : ''} remaining
+                      </Text>
+                    )}
+                  </Box>
+                )}
+
+                <Alert status="info" borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription>
+                    <Text fontWeight="semibold" mb={1}>What happens if you leave?</Text>
+                    <Text fontSize="sm">
+                      Your quiz will be automatically submitted with your current answers. 
+                      {answers.size === 0 && ' You haven\'t answered any questions yet!'}
+                    </Text>
+                  </AlertDescription>
+                </Alert>
+              </VStack>
             </ModalBody>
             <ModalFooter>
-              <Button variant="ghost" mr={3} onClick={handleCancelLeave}>
-                Cancel
+              <Button 
+                variant="outline" 
+                mr={3} 
+                onClick={handleCancelLeave}
+                colorScheme="gray"
+              >
+                Stay on Quiz
               </Button>
-              <Button colorScheme="blue" onClick={handleConfirmLeave}>
-                Submit & Leave
+              <Button 
+                colorScheme="red" 
+                onClick={handleConfirmLeave}
+                isLoading={isSubmittingRef.current}
+                loadingText="Submitting..."
+              >
+                Submit Quiz & Leave
               </Button>
             </ModalFooter>
           </ModalContent>

@@ -74,15 +74,17 @@ export const UserManagement: React.FC = () => {
   const [userPlans, setUserPlans] = useState<Record<string, string>>({}); // userId -> planId
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const { isOpen: isBulkRolesOpen, onOpen: onBulkRolesOpen, onClose: onBulkRolesClose } = useDisclosure();
   const { isOpen: isBulkPlansOpen, onOpen: onBulkPlansOpen, onClose: onBulkPlansClose } = useDisclosure();
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [bulkSelectedRoles, setBulkSelectedRoles] = useState<string[]>([]);
   const [bulkSelectedPlan, setBulkSelectedPlan] = useState<string>('');
   const [assigningPlan, setAssigningPlan] = useState<string | null>(null); // userId being assigned
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [createFormData, setCreateFormData] = useState({
     email: '',
-    password: '',
     name: '',
     age: '',
     ageGroup: '',
@@ -91,7 +93,16 @@ export const UserManagement: React.FC = () => {
     status: 'approved' as 'approved' | 'pending',
     moduleAccess: ['study', 'quiz'] as string[],
   });
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    age: '',
+    ageGroup: '',
+    grade: '',
+    parentContact: '',
+  });
   const [createLoading, setCreateLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const toast = useToast();
 
@@ -235,7 +246,6 @@ export const UserManagement: React.FC = () => {
 
       await adminApi.createUser({
         email: createFormData.email,
-        password: createFormData.password || undefined,
         name: createFormData.name,
         age: createFormData.age ? parseInt(createFormData.age) : undefined,
         ageGroup: createFormData.ageGroup || undefined,
@@ -246,10 +256,16 @@ export const UserManagement: React.FC = () => {
         status: createFormData.status,
       });
 
+      toast({
+        title: 'Success',
+        description: 'User created successfully. Welcome email with password has been sent.',
+        status: 'success',
+        duration: 3000,
+      });
+
       onCreateClose();
       setCreateFormData({
         email: '',
-        password: '',
         name: '',
         age: '',
         ageGroup: '',
@@ -262,9 +278,113 @@ export const UserManagement: React.FC = () => {
       loadUsers();
     } catch (err: unknown) {
       setError('Failed to create user');
+      toast({
+        title: 'Error',
+        description: 'Failed to create user. Please try again.',
+        status: 'error',
+        duration: 3000,
+      });
       console.error(err);
     } finally {
       setCreateLoading(false);
+    }
+  };
+
+  /**
+   * Open edit modal with user data
+   */
+  const handleOpenEdit = (user: User) => {
+    setSelectedUser(user);
+    setEditFormData({
+      name: user.name || '',
+      age: user.age?.toString() || '',
+      ageGroup: user.ageGroup || '',
+      grade: user.grade || '',
+      parentContact: user.parentContact || '',
+    });
+    onEditOpen();
+  };
+
+  /**
+   * Handle edit user submission
+   */
+  const handleEditUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setEditLoading(true);
+      setError(null);
+
+      await adminApi.updateUser(selectedUser.id, {
+        name: editFormData.name,
+        age: editFormData.age ? parseInt(editFormData.age) : undefined,
+        ageGroup: editFormData.ageGroup || undefined,
+        grade: editFormData.grade || undefined,
+        parentContact: editFormData.parentContact || undefined,
+      });
+
+      toast({
+        title: 'Success',
+        description: 'User updated successfully',
+        status: 'success',
+        duration: 2000,
+      });
+
+      onEditClose();
+      loadUsers();
+    } catch (err: unknown) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update user',
+        status: 'error',
+        duration: 3000,
+      });
+      console.error(err);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  /**
+   * Open delete confirmation modal
+   */
+  const handleOpenDelete = (user: User) => {
+    setUserToDelete(user);
+    onDeleteOpen();
+  };
+
+  /**
+   * Handle delete user
+   */
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      setError(null);
+
+      await adminApi.deleteUser(userToDelete.id);
+
+      toast({
+        title: 'Success',
+        description: `User ${userToDelete.name} deleted successfully`,
+        status: 'success',
+        duration: 2000,
+      });
+
+      onDeleteClose();
+      setUserToDelete(null);
+      loadUsers();
+    } catch (err: unknown) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete user',
+        status: 'error',
+        duration: 3000,
+      });
+      console.error(err);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -614,6 +734,7 @@ export const UserManagement: React.FC = () => {
                         Actions
                       </MenuButton>
                       <MenuList>
+                        <MenuItem onClick={() => handleOpenEdit(user)}>Edit User</MenuItem>
                         {user.status === 'pending' && (
                           <>
                             <MenuItem onClick={() => handleApprove(user.id, 'approved')}>
@@ -635,6 +756,9 @@ export const UserManagement: React.FC = () => {
                             Disable User
                           </MenuItem>
                         )}
+                        <MenuItem onClick={() => handleOpenDelete(user)} color="red.500">
+                          Delete User
+                        </MenuItem>
                       </MenuList>
                     </Menu>
                   </Td>
@@ -690,17 +814,12 @@ export const UserManagement: React.FC = () => {
                   />
                 </FormControl>
 
-                <FormControl>
-                  <FormLabel>Password (optional - user can set later)</FormLabel>
-                  <Input
-                    type="password"
-                    value={createFormData.password}
-                    onChange={(e) =>
-                      setCreateFormData({ ...createFormData, password: e.target.value })
-                    }
-                    placeholder="Leave empty for user to set"
-                  />
-                </FormControl>
+                <Alert status="info">
+                  <AlertIcon />
+                  <Text fontSize="sm">
+                    A secure password will be auto-generated and sent to the user's email address.
+                  </Text>
+                </Alert>
 
                 <FormControl isRequired>
                   <FormLabel>Name</FormLabel>
@@ -817,6 +936,119 @@ export const UserManagement: React.FC = () => {
               </Button>
               <Button colorScheme="blue" onClick={handleCreateUser} isLoading={createLoading} w={{ base: '100%', sm: 'auto' }}>
                 Create User
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Edit User Modal */}
+        <Modal isOpen={isEditOpen} onClose={onEditClose} size={{ base: 'full', md: 'lg' }}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Edit User - {selectedUser?.name}</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <VStack spacing={4}>
+                <FormControl isRequired>
+                  <FormLabel>Name</FormLabel>
+                  <Input
+                    value={editFormData.name}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, name: e.target.value })
+                    }
+                  />
+                </FormControl>
+
+                <HStack flexWrap="wrap" spacing={4} w="100%">
+                  <FormControl flex={1} minW={{ base: '100%', sm: '150px' }}>
+                    <FormLabel>Age</FormLabel>
+                    <Input
+                      type="number"
+                      value={editFormData.age}
+                      onChange={(e) =>
+                        setEditFormData({ ...editFormData, age: e.target.value })
+                      }
+                    />
+                  </FormControl>
+
+                  <FormControl flex={1} minW={{ base: '100%', sm: '150px' }}>
+                    <FormLabel>Age Group</FormLabel>
+                    <Select
+                      value={editFormData.ageGroup}
+                      onChange={(e) =>
+                        setEditFormData({ ...editFormData, ageGroup: e.target.value })
+                      }
+                    >
+                      <option value="">Select</option>
+                      <option value="6-8">6-8 years</option>
+                      <option value="9-11">9-11 years</option>
+                      <option value="12-14">12-14 years</option>
+                    </Select>
+                  </FormControl>
+                </HStack>
+
+                <FormControl>
+                  <FormLabel>Grade</FormLabel>
+                  <Input
+                    value={editFormData.grade}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, grade: e.target.value })
+                    }
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Parent Contact</FormLabel>
+                  <Input
+                    value={editFormData.parentContact}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, parentContact: e.target.value })
+                    }
+                  />
+                </FormControl>
+              </VStack>
+            </ModalBody>
+            <ModalFooter flexWrap="wrap">
+              <Button variant="ghost" mr={3} onClick={onEditClose} w={{ base: '100%', sm: 'auto' }} mb={{ base: 2, sm: 0 }}>
+                Cancel
+              </Button>
+              <Button colorScheme="blue" onClick={handleEditUser} isLoading={editLoading} w={{ base: '100%', sm: 'auto' }}>
+                Save Changes
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Delete User Confirmation Modal */}
+        <Modal isOpen={isDeleteOpen} onClose={onDeleteClose} size={{ base: 'full', md: 'md' }}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Delete User</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <VStack spacing={4} align="stretch">
+                <Alert status="warning">
+                  <AlertIcon />
+                  <Text fontSize="sm">
+                    Are you sure you want to delete <strong>{userToDelete?.name}</strong> ({userToDelete?.email})?
+                  </Text>
+                </Alert>
+                <Text fontSize="sm" color="gray.600">
+                  This action cannot be undone. All user data, including roles, plan assignments, and quiz history will be permanently deleted.
+                </Text>
+              </VStack>
+            </ModalBody>
+            <ModalFooter flexWrap="wrap">
+              <Button variant="ghost" mr={3} onClick={onDeleteClose} w={{ base: '100%', sm: 'auto' }} mb={{ base: 2, sm: 0 }}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={handleDeleteUser}
+                isLoading={deleteLoading}
+                w={{ base: '100%', sm: 'auto' }}
+              >
+                Delete User
               </Button>
             </ModalFooter>
           </ModalContent>
