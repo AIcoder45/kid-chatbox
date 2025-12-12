@@ -7,8 +7,6 @@ import { ReactNode } from 'react';
 import {
   Box,
   HStack,
-  IconButton,
-  Text,
   useBreakpointValue,
   useDisclosure,
   useColorModeValue,
@@ -37,8 +35,6 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const bgColor = useColorModeValue('gray.50', 'gray.900');
-  const mobileMenuBg = useColorModeValue('white', 'gray.800');
-  const mobileMenuBorder = useColorModeValue('gray.200', 'gray.700');
 
   return (
     <Box minHeight="100vh" bg={bgColor}>

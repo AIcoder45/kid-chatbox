@@ -162,48 +162,48 @@ export const generateCertificate = async (data: CertificateData): Promise<void> 
   currentY += 12;
 
   // Congratulations Text (Large and Celebratory)
-  doc.setFontSize(30);
+  doc.setFontSize(28);
   doc.setTextColor(236, 72, 153); // Pink
   doc.setFont('helvetica', 'bold');
   doc.text('CONGRATULATIONS!', centerX, currentY, { align: 'center' });
-  currentY += 12;
+  currentY += 10;
   
   // Decorative stars/celebration marks
-  doc.setFontSize(20);
+  doc.setFontSize(18);
   doc.setTextColor(255, 215, 0); // Gold
-  doc.text('★', centerX - 35, currentY - 5);
-  doc.text('★', centerX + 35, currentY - 5);
-  currentY += 8;
+  doc.text('★', centerX - 32, currentY - 4);
+  doc.text('★', centerX + 32, currentY - 4);
+  currentY += 6;
 
   // Certificate Title
-  doc.setFontSize(28);
+  doc.setFontSize(24);
   doc.setTextColor(25, 25, 112);
   doc.setFont('helvetica', 'bold');
   doc.text('CERTIFICATE OF ACHIEVEMENT', centerX, currentY, { align: 'center' });
-  currentY += 18;
+  currentY += 14;
 
   // Subtitle
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(70, 130, 180);
   doc.setFont('helvetica', 'normal');
   doc.text('This is to certify that', centerX, currentY, { align: 'center' });
-  currentY += 12;
+  currentY += 10;
 
   // Student Name (prominent)
-  doc.setFontSize(32);
+  doc.setFontSize(28);
   doc.setTextColor(25, 25, 112);
   doc.setFont('helvetica', 'bold');
   const nameLines = doc.splitTextToSize(studentName.toUpperCase(), pageWidth - 80);
-  const nameHeight = nameLines.length * 10;
+  const nameHeight = nameLines.length * 9;
   doc.text(nameLines, centerX, currentY, { align: 'center' });
-  currentY += nameHeight + 8;
+  currentY += nameHeight + 6;
 
   // Achievement text
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(70, 130, 180);
   doc.setFont('helvetica', 'normal');
   doc.text('has achieved', centerX, currentY, { align: 'center' });
-  currentY += 12;
+  currentY += 10;
 
   // Medal and Rank Section
   const medalColor = rank === 1 ? [255, 215, 0] : rank === 2 ? [192, 192, 192] : [205, 127, 50];
@@ -211,21 +211,21 @@ export const generateCertificate = async (data: CertificateData): Promise<void> 
   
   // Draw medal circle with glow effect
   doc.setFillColor(medalColor[0], medalColor[1], medalColor[2]);
-  doc.circle(centerX, currentY + 8, 12, 'F');
+  doc.circle(centerX, currentY + 7, 11, 'F');
   doc.setFillColor(255, 255, 255);
-  doc.circle(centerX, currentY + 8, 8, 'F');
-  doc.setFontSize(16);
+  doc.circle(centerX, currentY + 7, 7, 'F');
+  doc.setFontSize(15);
   doc.setTextColor(medalColor[0] * 0.7, medalColor[1] * 0.7, medalColor[2] * 0.7);
   doc.setFont('helvetica', 'bold');
-  doc.text(rank.toString(), centerX, currentY + 11, { align: 'center' });
-  currentY += 20;
+  doc.text(rank.toString(), centerX, currentY + 10, { align: 'center' });
+  currentY += 18;
   
   // Rank text
-  doc.setFontSize(28);
+  doc.setFontSize(24);
   doc.setTextColor(medalColor[0] * 0.8, medalColor[1] * 0.8, medalColor[2] * 0.8);
   doc.setFont('helvetica', 'bold');
   doc.text(rankText, centerX, currentY, { align: 'center' });
-  currentY += 15;
+  currentY += 12;
 
   // Quiz details
   doc.setFontSize(12);
@@ -234,40 +234,53 @@ export const generateCertificate = async (data: CertificateData): Promise<void> 
   const quizLines = doc.splitTextToSize(`in the quiz: "${quizName}"`, pageWidth - 60);
   const quizHeight = quizLines.length * 6;
   doc.text(quizLines, centerX, currentY, { align: 'center' });
-  currentY += quizHeight + 10;
+  currentY += quizHeight + 8;
 
-  // Score details box (beautiful card design)
-  const boxWidth = 90;
-  const boxHeight = 28;
+  // Score details box (beautiful card design) - compact version
+  const boxWidth = 85;
+  const boxHeight = 22;
   const boxX = centerX - boxWidth / 2;
   const boxY = currentY;
   
+  // Ensure box fits within page (with bottom margin of 50mm)
+  const maxBoxY = pageHeight - 50 - boxHeight;
+  const actualBoxY = Math.min(boxY, maxBoxY);
+  
   // Box shadow effect
   doc.setFillColor(220, 230, 240);
-  doc.roundedRect(boxX + 1, boxY + 1, boxWidth, boxHeight, 4, 4, 'F');
+  doc.roundedRect(boxX + 1, actualBoxY + 1, boxWidth, boxHeight, 3, 3, 'F');
   
   // Main box
   doc.setFillColor(250, 250, 255);
   doc.setDrawColor(139, 92, 246);
   doc.setLineWidth(1);
-  doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 4, 4, 'FD');
+  doc.roundedRect(boxX, actualBoxY, boxWidth, boxHeight, 3, 3, 'FD');
   
-  // Score text
-  doc.setFontSize(12);
+  // Score text - more compact layout
+  doc.setFontSize(11);
   doc.setTextColor(60, 60, 60);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Score: ${score}%`, centerX, boxY + 8, { align: 'center' });
-  doc.text(`Composite Score: ${compositeScore.toFixed(1)}`, centerX, boxY + 15, { align: 'center' });
+  doc.text(`Score: ${score}%`, centerX, actualBoxY + 7, { align: 'center' });
+  doc.text(`Composite: ${compositeScore.toFixed(1)}`, centerX, actualBoxY + 13, { align: 'center' });
   
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
-  doc.text(`Rank: #${rank} of ${totalParticipants} participants`, centerX, boxY + 22, { align: 'center' });
+  const rankTextLine = `Rank: #${rank} of ${totalParticipants}`;
+  doc.text(rankTextLine, centerX, actualBoxY + 19, { align: 'center' });
   
-  currentY = boxY + boxHeight + 15;
+  currentY = actualBoxY + boxHeight + 10;
+
+  // Ensure bottom section fits (need at least 35mm from bottom)
+  const minBottomSpace = 35;
+  const maxDateY = pageHeight - minBottomSpace;
+  
+  if (currentY > maxDateY) {
+    currentY = maxDateY;
+  }
 
   // Date section
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setTextColor(100, 100, 100);
   doc.setFont('helvetica', 'normal');
   const formattedDate = new Date(date).toLocaleDateString('en-US', { 
@@ -276,29 +289,29 @@ export const generateCertificate = async (data: CertificateData): Promise<void> 
     day: 'numeric' 
   });
   doc.text(`Issued on: ${formattedDate}`, centerX, currentY, { align: 'center' });
-  currentY += 8;
+  currentY += 7;
 
   // Bottom decorative line
   doc.setDrawColor(139, 92, 246);
   doc.setLineWidth(1.5);
   doc.line(centerX - 60, currentY, centerX + 60, currentY);
-  currentY += 10;
+  currentY += 8;
 
   // Platform signature with Guru AI branding
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setTextColor(99, 102, 241);
   doc.setFont('helvetica', 'bold');
   doc.text('Guru AI Learning Platform', centerX, currentY, { align: 'center' });
-  currentY += 6;
+  currentY += 5;
   
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
   doc.setFont('helvetica', 'normal');
   doc.text('AI-Powered Educational Excellence', centerX, currentY, { align: 'center' });
-  currentY += 8;
+  currentY += 6;
   
   // Certificate ID
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setTextColor(140, 140, 140);
   doc.setFont('helvetica', 'italic');
   doc.text('Certificate ID: ' + generateCertificateId(), centerX, currentY, { align: 'center' });

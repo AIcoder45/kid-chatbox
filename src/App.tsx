@@ -67,14 +67,6 @@ const theme = extendTheme({
     },
   },
   components: {
-    Card: {
-      baseStyle: (props: { colorMode: string }) => ({
-        container: {
-          bg: props.colorMode === 'dark' ? 'gray.800' : 'white',
-          color: props.colorMode === 'dark' ? 'whiteAlpha.900' : 'gray.800',
-        },
-      }),
-    },
     Button: {
       baseStyle: (props: { colorMode: string }) => ({
         _hover: {

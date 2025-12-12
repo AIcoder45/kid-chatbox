@@ -22,8 +22,7 @@ import {
   Progress,
   Divider,
 } from '@/shared/design-system';
-import { scheduledTestsApi, planApi } from '@/services/api';
-import { authApi } from '@/services/api';
+import { scheduledTestsApi } from '@/services/api';
 import { PullToRefresh } from './PullToRefresh';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 
