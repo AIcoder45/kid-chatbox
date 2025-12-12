@@ -128,7 +128,7 @@ export const Profile: React.FC<ProfileProps> = ({ user: initialUser }) => {
         <Box padding={6} display="flex" justifyContent="center" alignItems="center" minHeight="400px">
           <VStack spacing={4}>
             <Spinner size="xl" color="blue.500" />
-            <Text fontSize="lg">Loading profile...</Text>
+            <Text fontSize={{ base: 'sm', md: 'lg' }}>Loading profile...</Text>
           </VStack>
         </Box>
       </PullToRefresh>

@@ -66,7 +66,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
         {isMobile && <StudentSidebar user={user || null} isOpen={isOpen} onClose={onClose} />}
 
         {/* Main Content */}
-        <Box flex={1} minH="calc(100vh - 73px)" py={6} px={0}>
+        <Box flex={1} minH="calc(100vh - 73px)" py={{ base: 2, md: 4, lg: 6 }} px={{ base: 0, md: 0 }} width="100%" overflowX="hidden">
           {children}
         </Box>
       </HStack>

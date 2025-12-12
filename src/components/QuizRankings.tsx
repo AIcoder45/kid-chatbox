@@ -351,11 +351,11 @@ export const QuizRankings: React.FC = () => {
                       <Text fontSize="sm" color="gray.600" fontWeight="semibold">
                         Your Ranking
                       </Text>
-                      <HStack spacing={2}>
-                        <Badge colorScheme={getRankBadgeColor(userRanking.rank)} fontSize="lg" p={2}>
+                      <HStack spacing={2} flexWrap="wrap">
+                        <Badge colorScheme={getRankBadgeColor(userRanking.rank)} fontSize={{ base: 'sm', md: 'lg' }} p={2}>
                           {getRankIcon(userRanking.rank)}
                         </Badge>
-                        <Text fontSize="2xl" fontWeight="bold">
+                        <Text fontSize={{ base: 'lg', md: '2xl' }} fontWeight="bold">
                           #{userRanking.rank} out of {analytics.summary.totalParticipants} participants
                         </Text>
                       </HStack>
@@ -364,10 +364,10 @@ export const QuizRankings: React.FC = () => {
                       </Text>
                     </VStack>
                     <VStack align="end" spacing={1}>
-                      <Text fontSize="sm" color="gray.600">
+                      <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
                         Composite Score
                       </Text>
-                      <Text fontSize="3xl" fontWeight="bold" color="blue.600">
+                      <Text fontSize={{ base: 'xl', md: '3xl' }} fontWeight="bold" color="blue.600">
                         {userRanking.compositeScore.toFixed(1)}
                       </Text>
                     </VStack>
@@ -378,7 +378,7 @@ export const QuizRankings: React.FC = () => {
                       <Text fontSize="xs" color="gray.600">
                         Score
                       </Text>
-                      <Text fontSize="lg" fontWeight="bold" color="blue.600">
+                      <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold" color="blue.600">
                         {userRanking.scorePercentage}%
                       </Text>
                     </VStack>
@@ -386,7 +386,7 @@ export const QuizRankings: React.FC = () => {
                       <Text fontSize="xs" color="gray.600">
                         Correct
                       </Text>
-                      <Text fontSize="lg" fontWeight="bold">
+                      <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold">
                         {userRanking.correctAnswers}/{userRanking.totalQuestions}
                       </Text>
                     </VStack>
@@ -394,7 +394,7 @@ export const QuizRankings: React.FC = () => {
                       <Text fontSize="xs" color="gray.600">
                         Time
                       </Text>
-                      <Text fontSize="lg" fontWeight="bold">
+                      <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold">
                         {userRanking.timeTakenFormatted}
                       </Text>
                     </VStack>

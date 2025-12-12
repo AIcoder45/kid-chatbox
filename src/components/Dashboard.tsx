@@ -129,14 +129,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <Box padding={{ base: 3, sm: 4, md: 6 }} maxWidth="1400px" margin="0 auto" width="100%">
+      <Box 
+        padding={{ base: 2, sm: 3, md: 4, lg: 6 }} 
+        maxWidth="1400px" 
+        margin="0 auto" 
+        width="100%"
+        overflowX="hidden"
+        boxSizing="border-box"
+      >
       <VStack spacing={{ base: 4, md: 5 }} align="stretch">
         {/* Header */}
         <VStack align="start" spacing={{ base: 1, md: 2 }}>
-          <Heading size={{ base: 'lg', sm: 'xl', md: '2xl' }} color="blue.600">
+          <Heading size={{ base: 'md', sm: 'lg', md: 'xl', lg: '2xl' }} color="blue.600" lineHeight="shorter">
             {MESSAGES.WELCOME}, {userName}! 👋
           </Heading>
-          <Text fontSize={{ base: 'sm', sm: 'md', md: 'lg' }} color="gray.600">
+          <Text fontSize={{ base: 'xs', sm: 'sm', md: 'md', lg: 'lg' }} color="gray.600">
             {MESSAGES.DASHBOARD_GREETING}
           </Text>
         </VStack>
@@ -145,17 +152,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         <StudentUpcomingTestsMarquee />
 
         {/* Action Cards, Recent Scores, Plan Box, and Upcoming Tests Row */}
-        <HStack 
-          align="start" 
-          spacing={{ base: 4, md: 5, lg: 6 }} 
-          flexWrap={{ base: 'wrap', lg: 'nowrap' }}
+        <Box
+          display={{ base: 'block', lg: 'flex' }}
+          gap={{ base: 4, md: 5, lg: 6 }}
           width="100%"
+          flexDirection={{ base: 'column', lg: 'row' }}
         >
           {/* Left Content Area - Action Cards and Recent Scores */}
-          <Box flex={1} minW={{ base: '100%', lg: '0' }} width={{ base: '100%', lg: 'auto' }}>
+          <Box flex={{ base: 'none', lg: 1 }} width={{ base: '100%', lg: 'auto' }} minW={{ base: '100%', lg: 0 }}>
             <VStack spacing={{ base: 4, md: 5 }} align="stretch">
               {/* Main Action Tiles */}
-              <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={{ base: 4, md: 5 }}>
+              <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={{ base: 3, sm: 4, md: 5 }} gap={{ base: 3, sm: 4, md: 5 }}>
                 <Card
                   cursor={planInfo && planInfo.limits.remainingTopics === 0 ? 'not-allowed' : 'pointer'}
                   _hover={
@@ -189,9 +196,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   )}
                   <CardBody display="flex" alignItems="center" justifyContent="center" p={{ base: 4, md: 6 }}>
                     <VStack spacing={{ base: 2, md: 4 }}>
-                      <Text fontSize={{ base: '3xl', md: '4xl' }}>📚</Text>
-                      <Heading size={{ base: 'sm', md: 'md' }} textAlign="center">{MESSAGES.STUDY_MODE_TITLE}</Heading>
-                      <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600" textAlign="center" px={{ base: 2, md: 0 }}>
+                      <Text fontSize={{ base: '2xl', sm: '3xl', md: '4xl' }}>📚</Text>
+                      <Heading size={{ base: 'xs', sm: 'sm', md: 'md' }} textAlign="center">{MESSAGES.STUDY_MODE_TITLE}</Heading>
+                      <Text fontSize={{ base: '2xs', sm: 'xs', md: 'sm' }} color="gray.600" textAlign="center" px={{ base: 2, md: 0 }}>
                         {planInfo && planInfo.limits.remainingTopics === 0
                           ? 'Daily topic limit reached. Try again tomorrow!'
                           : 'Learn new topics with fun lessons!'}
@@ -233,9 +240,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   )}
                   <CardBody display="flex" alignItems="center" justifyContent="center" p={{ base: 4, md: 6 }}>
                     <VStack spacing={{ base: 2, md: 4 }}>
-                      <Text fontSize={{ base: '3xl', md: '4xl' }}>🎯</Text>
-                      <Heading size={{ base: 'sm', md: 'md' }} textAlign="center">{MESSAGES.QUIZ_MODE_TITLE}</Heading>
-                      <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600" textAlign="center" px={{ base: 2, md: 0 }}>
+                      <Text fontSize={{ base: '2xl', sm: '3xl', md: '4xl' }}>🎯</Text>
+                      <Heading size={{ base: 'xs', sm: 'sm', md: 'md' }} textAlign="center">{MESSAGES.QUIZ_MODE_TITLE}</Heading>
+                      <Text fontSize={{ base: '2xs', sm: 'xs', md: 'sm' }} color="gray.600" textAlign="center" px={{ base: 2, md: 0 }}>
                         {planInfo && planInfo.limits.remainingQuizzes === 0
                           ? 'Daily quiz limit reached. Try again tomorrow!'
                           : 'Test your knowledge with quizzes!'}
@@ -256,7 +263,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                         flexWrap="wrap"
                         spacing={{ base: 2, md: 4 }}
                       >
-                        <Heading size={{ base: 'sm', md: 'md' }} color="blue.600">
+                        <Heading size={{ base: 'xs', sm: 'sm', md: 'md' }} color="blue.600">
                           {MESSAGES.LAST_SCORES}
                         </Heading>
                         <Button
@@ -278,22 +285,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                             spacing={{ base: 3, md: 4 }}
                             alignItems={{ base: 'start', sm: 'center' }}
                           >
-                            <VStack align="start" spacing={0} flex={1} minW={{ base: '100%', sm: 'auto' }}>
-                              <Text fontWeight="semibold" fontSize={{ base: 'sm', md: 'md' }}>
+                            <VStack align="start" spacing={0} flex={1} minW={{ base: '100%', sm: 'auto' }} maxW={{ base: '100%', sm: 'none' }}>
+                              <Text fontWeight="semibold" fontSize={{ base: 'xs', sm: 'sm', md: 'md' }} noOfLines={1}>
                                 {score.subject}
                               </Text>
-                              <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
+                              <Text fontSize={{ base: '2xs', sm: 'xs', md: 'sm' }} color="gray.600">
                                 {new Date(score.date).toLocaleDateString()}
                               </Text>
                             </VStack>
-                            <Box width={{ base: '100%', sm: '200px' }} mt={{ base: 1, sm: 0 }}>
+                            <Box width={{ base: '100%', sm: '200px' }} mt={{ base: 2, sm: 0 }} flexShrink={0}>
                               <Progress
                                 value={score.score}
                                 colorScheme={score.score >= 70 ? 'green' : score.score >= 50 ? 'yellow' : 'orange'}
-                                size={{ base: 'md', md: 'lg' }}
+                                size={{ base: 'sm', sm: 'md', md: 'lg' }}
                                 borderRadius="md"
                               />
-                              <Text fontSize={{ base: 'xs', md: 'sm' }} fontWeight="bold" marginTop={1}>
+                              <Text fontSize={{ base: '2xs', sm: 'xs', md: 'sm' }} fontWeight="bold" marginTop={1}>
                                 {score.score}%
                               </Text>
                             </Box>
@@ -315,10 +322,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     spacing={{ base: 3, md: 4 }}
                   >
                     <VStack align="start" spacing={1} flex={1} minW={{ base: '100%', md: 'auto' }}>
-                      <Heading size={{ base: 'sm', md: 'md' }} color="blue.600">
+                      <Heading size={{ base: 'xs', sm: 'sm', md: 'md' }} color="blue.600">
                         Study History
                       </Heading>
-                      <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
+                      <Text fontSize={{ base: '2xs', sm: 'xs', md: 'sm' }} color="gray.600">
                         View all your past study topics and lessons
                       </Text>
                     </VStack>
@@ -346,10 +353,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                       spacing={{ base: 3, md: 4 }}
                     >
                       <VStack align="start" spacing={1} flex={1} minW={{ base: '100%', md: 'auto' }}>
-                        <Heading size={{ base: 'sm', md: 'md' }} color="blue.600">
+                        <Heading size={{ base: 'xs', sm: 'sm', md: 'md' }} color="blue.600">
                           Quiz History
                         </Heading>
-                        <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
+                        <Text fontSize={{ base: '2xs', sm: 'xs', md: 'sm' }} color="gray.600">
                           View all your past quiz results with questions and answers
                         </Text>
                       </VStack>
@@ -370,7 +377,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           </Box>
 
           {/* Right Sidebar - Plan Info and Upcoming Tests */}
-          <VStack spacing={{ base: 4, md: 5 }} align="stretch" w={{ base: '100%', lg: '350px' }} minW={{ base: '100%', lg: '350px' }}>
+          <VStack 
+            spacing={{ base: 3, md: 4, lg: 5 }} 
+            align="stretch" 
+            w={{ base: '100%', lg: '350px' }} 
+            minW={{ base: '100%', lg: '350px' }}
+            maxW={{ base: '100%', lg: '350px' }}
+            order={{ base: -1, lg: 0 }}
+            flexShrink={0}
+          >
             {/* Plan Information Card */}
             {planInfo && !planLoading && (
               <Box w="100%" alignSelf="start">
@@ -387,8 +402,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   <CardBody p={{ base: 3, md: 4 }}>
                     <VStack spacing={{ base: 3, md: 4 }} align="stretch" h="100%" justify="space-between">
                       <VStack align="start" spacing={1}>
-                        <HStack spacing={2} flexWrap="wrap" alignItems="center">
-                          <Heading size={{ base: 'sm', md: 'md' }} color="blue.700">
+                        <HStack spacing={2} flexWrap="wrap" alignItems="center" w="100%">
+                          <Heading size={{ base: 'xs', sm: 'sm', md: 'md' }} color="blue.700" noOfLines={1}>
                             Your Plan
                           </Heading>
                           {typeof planInfo.plan.monthly_cost === 'number' && planInfo.plan.monthly_cost > 0 ? (
@@ -401,7 +416,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                             </Badge>
                           )}
                         </HStack>
-                        <Text fontSize={{ base: 'sm', md: 'lg' }} fontWeight="bold" color="blue.800">
+                        <Text fontSize={{ base: 'xs', sm: 'sm', md: 'lg' }} fontWeight="bold" color="blue.800" noOfLines={2}>
                           {planInfo.plan.name}
                         </Text>
                       </VStack>
@@ -472,16 +487,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             {/* Upcoming Tests Sidebar */}
             <UpcomingTestsSidebar />
           </VStack>
-        </HStack>
+        </Box>
 
         {/* Recommended Topics */}
         {analytics && analytics.recommended_topics.length > 0 && (
-          <HStack align="start" spacing={{ base: 4, md: 5, lg: 6 }} flexWrap={{ base: 'wrap', lg: 'nowrap' }} width="100%">
-            <Box flex={1} minW={{ base: '100%', lg: '0' }} width={{ base: '100%', lg: 'auto' }}>
+          <Box
+            display={{ base: 'block', lg: 'flex' }}
+            gap={{ base: 4, md: 5, lg: 6 }}
+            width="100%"
+            flexDirection={{ base: 'column', lg: 'row' }}
+          >
+            <Box flex={{ base: 'none', lg: 1 }} width={{ base: '100%', lg: 'auto' }} minW={{ base: '100%', lg: 0 }}>
               <Card>
                 <CardBody p={{ base: 3, md: 4 }}>
                   <VStack spacing={{ base: 3, md: 4 }} align="stretch">
-                    <Heading size={{ base: 'sm', md: 'md' }} color="blue.600">
+                    <Heading size={{ base: 'xs', sm: 'sm', md: 'md' }} color="blue.600">
                       {MESSAGES.SUGGESTED_TOPICS}
                     </Heading>
                     <VStack spacing={{ base: 2, md: 3 }} align="stretch">
@@ -503,17 +523,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               </Card>
             </Box>
             {/* Right Sidebar Spacer */}
-            <Box w={{ base: '0', lg: '350px' }} display={{ base: 'none', lg: 'block' }} />
-          </HStack>
+            <Box w={{ base: '0', lg: '350px' }} display={{ base: 'none', lg: 'block' }} flexShrink={0} />
+          </Box>
         )}
 
         {/* Motivational Message */}
-        <HStack align="start" spacing={{ base: 4, md: 5, lg: 6 }} flexWrap={{ base: 'wrap', lg: 'nowrap' }} width="100%">
-          <Box flex={1} minW={{ base: '100%', lg: '0' }} width={{ base: '100%', lg: 'auto' }}>
+        <Box
+          display={{ base: 'block', lg: 'flex' }}
+          gap={{ base: 4, md: 5, lg: 6 }}
+          width="100%"
+          flexDirection={{ base: 'column', lg: 'row' }}
+        >
+          <Box flex={{ base: 'none', lg: 1 }} width={{ base: '100%', lg: 'auto' }} minW={{ base: '100%', lg: 0 }}>
             <Card bg="green.50" borderColor="green.200">
               <CardBody p={{ base: 3, md: 4 }}>
                 <Text
-                  fontSize={{ base: 'sm', md: 'md' }}
+                  fontSize={{ base: 'xs', sm: 'sm', md: 'md' }}
                   color="green.700"
                   textAlign="center"
                   fontWeight="semibold"
@@ -525,8 +550,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             </Card>
           </Box>
           {/* Right Sidebar Spacer */}
-          <Box w={{ base: '0', lg: '350px' }} display={{ base: 'none', lg: 'block' }} />
-        </HStack>
+          <Box w={{ base: '0', lg: '350px' }} display={{ base: 'none', lg: 'block' }} flexShrink={0} />
+        </Box>
       </VStack>
     </Box>
     </PullToRefresh>

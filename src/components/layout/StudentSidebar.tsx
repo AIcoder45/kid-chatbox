@@ -112,7 +112,7 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({ user, isOpen, on
         key={item.path}
         w="100%"
         justifyContent="flex-start"
-        leftIcon={<Text fontSize="lg">{item.icon}</Text>}
+        leftIcon={<Text fontSize={{ base: 'md', md: 'lg' }}>{item.icon}</Text>}
         variant={isActive ? 'solid' : 'ghost'}
         colorScheme={isActive ? 'blue' : 'gray'}
         onClick={() => !isDisabled && handleNavigate(item.path)}

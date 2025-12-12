@@ -17,19 +17,19 @@ export const Footer: React.FC = () => {
       as="footer"
       bg="gray.800"
       color="white"
-      paddingY={6}
-      paddingX={6}
+      paddingY={{ base: 4, md: 6 }}
+      paddingX={{ base: 4, md: 6 }}
       marginTop="auto"
     >
-      <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={4}>
-        <Text fontSize="sm">
+      <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={{ base: 2, md: 4 }}>
+        <Text fontSize={{ base: 'xs', md: 'sm' }}>
           © {currentYear} {APP_CONSTANTS.BRAND_NAME}. All rights reserved.
         </Text>
-        <HStack spacing={4}>
-          <RouterLink to="/dashboard" style={{ fontSize: '0.875rem', color: '#90cdf4' }}>
+        <HStack spacing={{ base: 2, md: 4 }}>
+          <RouterLink to="/dashboard" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)', color: '#90cdf4' }}>
             Home
           </RouterLink>
-          <Text fontSize="sm" color="gray.400">
+          <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.400">
             Made with ❤️ for kids
           </Text>
         </HStack>

@@ -37,13 +37,13 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           boxShadow: '2xl',
         }}
       >
-        <CardBody p={8}>
-          <VStack spacing={4} align="center">
-            <Text fontSize="5xl">{emoji}</Text>
-            <Heading size="md" color="purple.600" textAlign="center">
+        <CardBody p={{ base: 4, md: 8 }}>
+          <VStack spacing={{ base: 3, md: 4 }} align="center">
+            <Text fontSize={{ base: '3xl', md: '5xl' }}>{emoji}</Text>
+            <Heading size={{ base: 'sm', md: 'md' }} color="purple.600" textAlign="center">
               {title}
             </Heading>
-            <Text fontSize="sm" color="gray.600" textAlign="center">
+            <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600" textAlign="center">
               {description}
             </Text>
           </VStack>

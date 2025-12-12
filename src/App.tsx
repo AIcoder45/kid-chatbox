@@ -36,7 +36,7 @@ import { User } from '@/types';
 import { QuizTimerProvider } from '@/contexts/QuizTimerContext';
 
 /**
- * Theme configuration with dark mode support
+ * Theme configuration with dark mode support and responsive font sizes
  */
 const theme = extendTheme({
   config: {
@@ -48,6 +48,7 @@ const theme = extendTheme({
       body: {
         bg: props.colorMode === 'dark' ? 'gray.900' : 'gray.50',
         color: props.colorMode === 'dark' ? 'whiteAlpha.900' : 'gray.800',
+        fontSize: { base: '14px', md: '16px' }, // Smaller base font on mobile
       },
     }),
   },
@@ -80,6 +81,68 @@ const theme = extendTheme({
           bg: props.colorMode === 'dark' ? 'gray.700' : 'gray.100',
         },
       }),
+    },
+    Heading: {
+      baseStyle: {
+        // Responsive font sizes - smaller on mobile
+        fontSize: {
+          base: '1.25rem', // 20px
+          sm: '1.5rem',    // 24px
+          md: '1.875rem',  // 30px
+          lg: '2.25rem',   // 36px
+        },
+      },
+      sizes: {
+        xs: {
+          fontSize: { base: '0.75rem', md: '0.875rem' }, // 12px/14px
+        },
+        sm: {
+          fontSize: { base: '0.875rem', md: '1rem' }, // 14px/16px
+        },
+        md: {
+          fontSize: { base: '1rem', md: '1.125rem' }, // 16px/18px
+        },
+        lg: {
+          fontSize: { base: '1.125rem', md: '1.25rem' }, // 18px/20px
+        },
+        xl: {
+          fontSize: { base: '1.25rem', md: '1.5rem' }, // 20px/24px
+        },
+        '2xl': {
+          fontSize: { base: '1.5rem', md: '1.875rem' }, // 24px/30px
+        },
+        '3xl': {
+          fontSize: { base: '1.875rem', md: '2.25rem' }, // 30px/36px
+        },
+        '4xl': {
+          fontSize: { base: '2.25rem', md: '3rem' }, // 36px/48px
+        },
+      },
+    },
+    Text: {
+      baseStyle: {
+        fontSize: { base: '0.875rem', md: '1rem' }, // 14px/16px - smaller on mobile
+      },
+      sizes: {
+        xs: {
+          fontSize: { base: '0.625rem', md: '0.75rem' }, // 10px/12px
+        },
+        sm: {
+          fontSize: { base: '0.75rem', md: '0.875rem' }, // 12px/14px
+        },
+        md: {
+          fontSize: { base: '0.875rem', md: '1rem' }, // 14px/16px
+        },
+        lg: {
+          fontSize: { base: '1rem', md: '1.125rem' }, // 16px/18px
+        },
+        xl: {
+          fontSize: { base: '1.125rem', md: '1.25rem' }, // 18px/20px
+        },
+        '2xl': {
+          fontSize: { base: '1.25rem', md: '1.5rem' }, // 20px/24px
+        },
+      },
     },
   },
 });

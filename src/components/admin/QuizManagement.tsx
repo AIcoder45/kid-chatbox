@@ -1843,7 +1843,7 @@ export const QuizManagement: React.FC = () => {
           <ModalContent maxH="90vh" maxW="90vw">
             <ModalHeader>
               <VStack align="start" spacing={1}>
-                <Text fontSize="lg" fontWeight="bold">
+                <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold">
                   {viewingScheduledTest?.quizName || 'Scheduled Test Details'}
                 </Text>
                 <Badge
@@ -2004,7 +2004,7 @@ export const QuizManagement: React.FC = () => {
           <ModalContent maxH="90vh" maxW="90vw">
             <ModalHeader>
               <VStack align="start" spacing={1}>
-                <Text fontSize="lg" fontWeight="bold">
+                <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold">
                   {viewingQuiz?.quiz.name}
                 </Text>
                 <HStack spacing={4} flexWrap="wrap">
@@ -2059,7 +2059,7 @@ export const QuizManagement: React.FC = () => {
                           <Card key={question.id} variant="outline" borderWidth="2px">
                             <CardBody>
                               <HStack justify="space-between" mb={3}>
-                                <Text fontWeight="bold" color="blue.600" fontSize="lg">
+                                <Text fontWeight="bold" color="blue.600" fontSize={{ base: 'md', md: 'lg' }}>
                                   Question {index + 1} of {viewingQuiz.questions.length}
                                 </Text>
                                 <HStack spacing={2}>

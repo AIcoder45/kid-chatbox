@@ -276,10 +276,10 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
           <Box maxWidth="1400px" margin="0 auto">
             <HStack justifyContent="space-between" alignItems="center" spacing={4}>
               <HStack spacing={3}>
-                <Text fontSize="lg" fontWeight="bold">
+                <Text fontSize={{ base: 'md', md: 'lg' }} fontWeight="bold">
                   ⏱️ {formatTime(quizTimer.timeRemaining)}
                 </Text>
-                <Text fontSize="sm" opacity={0.9}>
+                <Text fontSize={{ base: 'xs', md: 'sm' }} opacity={0.9}>
                   Quiz in progress
                 </Text>
               </HStack>

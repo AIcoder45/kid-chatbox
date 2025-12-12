@@ -34,7 +34,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           }}
         >
           <Heading
-            size="4xl"
+            size={{ base: '2xl', md: '4xl' }}
             bgGradient="linear(to-r, purple.600, pink.600, blue.600)"
             bgClip="text"
             fontWeight="extrabold"
@@ -45,7 +45,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </motion.div>
 
         <Text
-          fontSize="2xl"
+          fontSize={{ base: 'lg', md: '2xl' }}
           color="white"
           fontWeight="bold"
           textShadow="2px 2px 4px rgba(0,0,0,0.3)"
@@ -54,25 +54,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </Text>
 
         <Text
-          fontSize="lg"
+          fontSize={{ base: 'sm', md: 'lg' }}
           color="whiteAlpha.900"
           maxW="600px"
           textShadow="1px 1px 2px rgba(0,0,0,0.3)"
+          px={{ base: 4, md: 0 }}
         >
           Level up your study game with personalized quizzes, smart tutoring, and epic learning
           adventures! No cap, this is the future of education 🎓
         </Text>
 
-        <HStack spacing={4} pt={4}>
+        <HStack spacing={{ base: 2, md: 4 }} pt={4} flexWrap="wrap" justifyContent="center">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
-              size="lg"
+              size={{ base: 'md', md: 'lg' }}
               colorScheme="purple"
               bg="purple.500"
               color="white"
-              px={8}
-              py={6}
-              fontSize="lg"
+              px={{ base: 6, md: 8 }}
+              py={{ base: 4, md: 6 }}
+              fontSize={{ base: 'sm', md: 'lg' }}
               fontWeight="bold"
               borderRadius="full"
               boxShadow="xl"
@@ -89,13 +90,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
-              size="lg"
+              size={{ base: 'md', md: 'lg' }}
               variant="outline"
               borderColor="white"
               color="white"
-              px={8}
-              py={6}
-              fontSize="lg"
+              px={{ base: 6, md: 8 }}
+              py={{ base: 4, md: 6 }}
+              fontSize={{ base: 'sm', md: 'lg' }}
               fontWeight="bold"
               borderRadius="full"
               bg="rgba(255, 255, 255, 0.1)"
