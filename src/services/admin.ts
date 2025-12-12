@@ -648,6 +648,79 @@ export const adminApi = {
     const response = await apiClient.get('/admin/quiz-history/filters');
     return response.data;
   },
+
+  /**
+   * Get quiz results analytics with rankings
+   */
+  getQuizResultsAnalytics: async (params?: {
+    subject?: string;
+    subtopic?: string;
+    sortBy?: 'score' | 'time' | 'questions' | 'composite';
+    limit?: number;
+  }): Promise<{
+    summary: {
+      totalAttempts: number;
+      totalParticipants: number;
+      averageScore: number;
+      averageTime: number;
+      subjects: Record<string, {
+        attempts: number;
+        averageScore: number;
+        participants: number;
+      }>;
+    };
+    leaderboard: Array<{
+      attemptId: string;
+      userId: string;
+      userName: string;
+      userEmail: string;
+      subject: string;
+      subtopic: string;
+      age: number;
+      language: string;
+      timestamp: string;
+      scorePercentage: number;
+      correctAnswers: number;
+      totalQuestions: number;
+      wrongAnswers: number;
+      timeTaken: number;
+      timeTakenFormatted: string;
+      compositeScore: number;
+      rank: number;
+      scoreBreakdown: {
+        scoreComponent: number;
+        questionsComponent: number;
+        timeComponent: number;
+      };
+    }>;
+    participants: Array<{
+      attemptId: string;
+      userId: string;
+      userName: string;
+      userEmail: string;
+      subject: string;
+      subtopic: string;
+      age: number;
+      language: string;
+      timestamp: string;
+      scorePercentage: number;
+      correctAnswers: number;
+      totalQuestions: number;
+      wrongAnswers: number;
+      timeTaken: number;
+      timeTakenFormatted: string;
+      compositeScore: number;
+      rank: number;
+      scoreBreakdown: {
+        scoreComponent: number;
+        questionsComponent: number;
+        timeComponent: number;
+      };
+    }>;
+  }> => {
+    const response = await apiClient.get('/admin/analytics/quiz-results', { params });
+    return response.data;
+  },
 };
 
 export interface StudyLibraryContent {

@@ -709,5 +709,192 @@ router.get('/insights', async (req, res, next) => {
   }
 });
 
+/**
+ * Get quiz results analytics with rankings
+ * GET /api/admin/analytics/quiz-results?subject=&subtopic=&sortBy=score|time|questions|composite
+ * Rankings based on: Score (60%), Questions Correct (20%), Time Efficiency (20%)
+ */
+router.get('/quiz-results', async (req, res, next) => {
+  try {
+    const { subject, subtopic, sortBy = 'composite', limit = 100 } = req.query;
+
+    let query = `
+      SELECT 
+        qr.id,
+        qr.user_id,
+        qr.timestamp,
+        qr.subject,
+        qr.subtopic,
+        qr.age,
+        qr.language,
+        qr.correct_count,
+        qr.wrong_count,
+        qr.time_taken,
+        qr.score_percentage,
+        u.name as user_name,
+        u.email as user_email,
+        (qr.correct_count + qr.wrong_count) as total_questions
+      FROM quiz_results qr
+      LEFT JOIN users u ON qr.user_id = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramCount = 0;
+
+    if (subject) {
+      paramCount++;
+      query += ` AND qr.subject ILIKE $${paramCount}`;
+      params.push(`%${subject}%`);
+    }
+
+    if (subtopic) {
+      paramCount++;
+      query += ` AND qr.subtopic ILIKE $${paramCount}`;
+      params.push(`%${subtopic}%`);
+    }
+
+    query += ` ORDER BY qr.timestamp DESC LIMIT $${++paramCount}`;
+    params.push(parseInt(limit) || 100);
+
+    const result = await pool.query(query, params);
+
+    // Calculate composite scores and rankings
+    const participants = result.rows.map((row) => {
+      const totalQuestions = parseInt(row.total_questions) || 1;
+      const correctAnswers = parseInt(row.correct_count) || 0;
+      const timeTaken = parseInt(row.time_taken) || 1; // in seconds
+      const scorePercentage = parseFloat(row.score_percentage) || 0;
+
+      // Calculate components (normalized to 0-100 scale)
+      // Score component (60% weight) - already 0-100
+      const scoreComponent = scorePercentage * 0.6;
+
+      // Questions component (20% weight) - percentage of correct answers
+      const questionsComponent = (correctAnswers / totalQuestions) * 100 * 0.2;
+
+      // Time efficiency component (20% weight) - faster is better
+      // Normalize: assume average time per question is 30 seconds
+      // More efficient = less time per question
+      const avgTimePerQuestion = timeTaken / totalQuestions;
+      const idealTimePerQuestion = 30; // seconds
+      const timeEfficiency = Math.max(0, Math.min(100, (idealTimePerQuestion / avgTimePerQuestion) * 100));
+      const timeComponent = timeEfficiency * 0.2;
+
+      // Composite score
+      const compositeScore = scoreComponent + questionsComponent + timeComponent;
+
+      return {
+        attemptId: row.id,
+        userId: row.user_id,
+        userName: row.user_name || 'Unknown',
+        userEmail: row.user_email || '',
+        subject: row.subject,
+        subtopic: row.subtopic,
+        age: row.age,
+        language: row.language,
+        timestamp: row.timestamp,
+        scorePercentage: Math.round(scorePercentage),
+        correctAnswers,
+        totalQuestions,
+        wrongAnswers: parseInt(row.wrong_count) || 0,
+        timeTaken,
+        timeTakenFormatted: formatTime(timeTaken),
+        compositeScore: Math.round(compositeScore * 10) / 10,
+        scoreBreakdown: {
+          scoreComponent: Math.round(scoreComponent * 10) / 10,
+          questionsComponent: Math.round(questionsComponent * 10) / 10,
+          timeComponent: Math.round(timeComponent * 10) / 10,
+        },
+      };
+    });
+
+    // Sort by selected criteria
+    let sortedParticipants = [...participants];
+    switch (sortBy) {
+      case 'score':
+        sortedParticipants.sort((a, b) => b.scorePercentage - a.scorePercentage);
+        break;
+      case 'time':
+        sortedParticipants.sort((a, b) => a.timeTaken - b.timeTaken);
+        break;
+      case 'questions':
+        sortedParticipants.sort((a, b) => {
+          const ratioA = a.correctAnswers / a.totalQuestions;
+          const ratioB = b.correctAnswers / b.totalQuestions;
+          return ratioB - ratioA;
+        });
+        break;
+      case 'composite':
+      default:
+        sortedParticipants.sort((a, b) => b.compositeScore - a.compositeScore);
+        break;
+    }
+
+    // Assign ranks
+    sortedParticipants.forEach((participant, index) => {
+      participant.rank = index + 1;
+    });
+
+    // Group by subject/subtopic for summary
+    const summary = {
+      totalAttempts: participants.length,
+      totalParticipants: new Set(participants.map((p) => p.userId)).size,
+      averageScore: participants.length > 0
+        ? Math.round(participants.reduce((sum, p) => sum + p.scorePercentage, 0) / participants.length)
+        : 0,
+      averageTime: participants.length > 0
+        ? Math.round(participants.reduce((sum, p) => sum + p.timeTaken, 0) / participants.length)
+        : 0,
+      subjects: {},
+    };
+
+    participants.forEach((p) => {
+      if (!summary.subjects[p.subject]) {
+        summary.subjects[p.subject] = {
+          attempts: 0,
+          averageScore: 0,
+          participants: new Set(),
+        };
+      }
+      summary.subjects[p.subject].attempts++;
+      summary.subjects[p.subject].participants.add(p.userId);
+    });
+
+    // Calculate average scores per subject
+    Object.keys(summary.subjects).forEach((subject) => {
+      const subjectParticipants = participants.filter((p) => p.subject === subject);
+      summary.subjects[subject].averageScore = subjectParticipants.length > 0
+        ? Math.round(
+            subjectParticipants.reduce((sum, p) => sum + p.scorePercentage, 0) /
+              subjectParticipants.length
+          )
+        : 0;
+      summary.subjects[subject].participants = summary.subjects[subject].participants.size;
+    });
+
+    res.json({
+      success: true,
+      summary,
+      leaderboard: sortedParticipants,
+      participants: sortedParticipants,
+    });
+  } catch (error) {
+    console.error('Error in quiz results analytics:', error);
+    next(error);
+  }
+});
+
+/**
+ * Format time in seconds to readable format
+ */
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (mins > 0) {
+    return `${mins}m ${secs}s`;
+  }
+  return `${secs}s`;
+}
+
 module.exports = router;
 

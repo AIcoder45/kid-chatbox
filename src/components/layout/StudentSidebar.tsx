@@ -39,6 +39,7 @@ const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
   { path: '/scheduled-tests', label: 'Scheduled Tests', icon: '📅' },
   { path: '/quiz', label: 'AI Quiz Mode', icon: '📝' },
+  { path: '/quiz-rankings', label: 'Quiz Rankings', icon: '🏆' },
   { path: '/study', label: 'AI Study Mode', icon: '📚' },
   { path: '/study-library', label: 'Study Library', icon: '📚' },
   { path: '/study-history', label: 'Study History', icon: '📖' },

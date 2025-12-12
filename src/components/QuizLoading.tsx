@@ -47,6 +47,7 @@ export const QuizLoading: React.FC<QuizLoadingProps> = ({
       { icon: '⏳', message: 'Preparing questions...', subMessage: 'Getting everything ready' },
     ],
     'loading-results': [
+      { icon: '🔍', message: 'Checking your answers...', subMessage: 'Be patient... Thanks for putting efforts' },
       { icon: '📊', message: 'Calculating results...', subMessage: 'Processing your answers' },
       { icon: '💡', message: 'Generating improvement tips...', subMessage: 'Creating personalized feedback' },
       { icon: '✅', message: 'Finalizing...', subMessage: 'Almost done!' },

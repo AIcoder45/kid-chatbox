@@ -512,7 +512,14 @@ router.post('/attempts/:attemptId/submit', checkModuleAccess('quiz'), async (req
       if (questionResult.rows.length === 0) continue;
 
       const question = questionResult.rows[0];
-      const correctAnswer = JSON.parse(question.correct_answer);
+      let correctAnswer;
+      try {
+        correctAnswer = JSON.parse(question.correct_answer);
+      } catch {
+        // If parsing fails, use as string
+        correctAnswer = question.correct_answer;
+      }
+      
       const userAnswer = answer.answer;
 
       // Compare answers (simplified - may need more complex logic for different question types)
@@ -520,7 +527,17 @@ router.post('/attempts/:attemptId/submit', checkModuleAccess('quiz'), async (req
       if (Array.isArray(correctAnswer)) {
         isCorrect = JSON.stringify(correctAnswer.sort()) === JSON.stringify(Array.isArray(userAnswer) ? userAnswer.sort() : [userAnswer]);
       } else {
-        isCorrect = String(correctAnswer).toLowerCase() === String(userAnswer).toLowerCase();
+        // Normalize both answers: trim whitespace, convert to uppercase for single-letter answers (A, B, C, D)
+        const normalizedCorrect = String(correctAnswer).trim().toUpperCase();
+        const normalizedUser = String(userAnswer).trim().toUpperCase();
+        
+        // For single-letter answers (A-D), compare directly
+        if (['A', 'B', 'C', 'D'].includes(normalizedCorrect) && ['A', 'B', 'C', 'D'].includes(normalizedUser)) {
+          isCorrect = normalizedCorrect === normalizedUser;
+        } else {
+          // For other answer types, use case-insensitive comparison
+          isCorrect = normalizedCorrect === normalizedUser;
+        }
       }
 
       if (isCorrect) {

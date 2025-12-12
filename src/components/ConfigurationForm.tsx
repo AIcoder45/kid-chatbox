@@ -54,7 +54,7 @@ interface ConfigurationFormProps {
     questionCount?: number; // Optional, defaults to 15 for quiz mode
     difficulty: Difficulty;
     instructions?: string; // Optional custom instructions for AI question generation
-    timeLimit?: number; // Optional time limit in minutes
+    timeLimit: number; // Required time limit in minutes (default: 10)
     gradeLevel?: string; // Optional class/grade level
     sampleQuestion?: string; // Optional sample question or pattern
     examStyle?: string; // Optional exam style (CBSE, NCERT, Olympiad, competitive)
@@ -76,7 +76,7 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
   );
   const [difficulty, setDifficulty] = useState<Difficulty>(DIFFICULTY_LEVELS.BASIC);
   const [instructions, setInstructions] = useState<string>('');
-  const [timeLimit, setTimeLimit] = useState<string>('');
+  const [timeLimit, setTimeLimit] = useState<string>('10');
   const [gradeLevel, setGradeLevel] = useState<string>('');
   const [sampleQuestion, setSampleQuestion] = useState<string>('');
   const [examStyle, setExamStyle] = useState<string>('');
@@ -254,7 +254,9 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
       questionCountNum >= QUIZ_CONSTANTS.MIN_QUESTIONS &&
       questionCountNum <= QUIZ_CONSTANTS.MAX_QUESTIONS
     ) {
-      const timeLimitNum = timeLimit.trim() ? parseInt(timeLimit, 10) : undefined;
+      // Time limit is mandatory, default to 10 if not provided or invalid
+      const timeLimitNum = timeLimit.trim() ? parseInt(timeLimit, 10) : 10;
+      const finalTimeLimit = !isNaN(timeLimitNum) && timeLimitNum > 0 ? timeLimitNum : 10;
       
       onConfigComplete({
         subject,
@@ -262,7 +264,7 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
         questionCount: questionCountNum,
         difficulty,
         instructions: finalInstructions,
-        timeLimit: timeLimitNum && !isNaN(timeLimitNum) ? timeLimitNum : undefined,
+        timeLimit: finalTimeLimit,
         gradeLevel: gradeLevel.trim() || undefined,
         sampleQuestion: sampleQuestion.trim() || undefined,
         examStyle: examStyle.trim() || undefined,
@@ -287,12 +289,16 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
     questionCountNum >= QUIZ_CONSTANTS.MIN_QUESTIONS &&
     questionCountNum <= QUIZ_CONSTANTS.MAX_QUESTIONS;
 
+  const timeLimitNum = parseInt(timeLimit, 10);
+  const isValidTimeLimit = !isNaN(timeLimitNum) && timeLimitNum > 0;
+
   const isFormValid =
     isValidSubject(subject) &&
     (subject === SUBJECTS.OTHER
       ? customSubtopic.trim().length > 0
       : selectedSubtopics.length > 0 || instructions.trim().length > 0) &&
-    isValidQuestionCount;
+    isValidQuestionCount &&
+    isValidTimeLimit;
 
   const subtopics = subject ? getSubtopicsForSubject(subject) : [];
 
@@ -387,33 +393,67 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
                     >
                       <CheckboxGroup value={selectedSubtopics}>
                         <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={3}>
-                          {subtopics.map((st, index) => (
-                            <motion.div
-                              key={st}
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: 0.1 + index * 0.02 }}
-                              whileHover={{ scale: 1.05 }}
-                            >
-                              <Checkbox
-                                value={st}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                  handleSubtopicToggle(st, e.target.checked)
-                                }
-                                size="lg"
-                                colorScheme="blue"
-                                _hover={{ transform: 'scale(1.02)' }}
-                                transition="all 0.2s"
-                                padding={2}
-                                borderRadius="md"
-                                borderWidth={selectedSubtopics.includes(st) ? 2 : 1}
-                                borderColor={selectedSubtopics.includes(st) ? 'blue.300' : 'transparent'}
-                                bg={selectedSubtopics.includes(st) ? 'blue.50' : 'transparent'}
+                          {subtopics.map((st, index) => {
+                            const isSelected = selectedSubtopics.includes(st);
+                            return (
+                              <motion.div
+                                key={st}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.1 + index * 0.02 }}
+                                whileHover={{ scale: 1.02 }}
                               >
-                                <Text fontWeight="medium" fontSize="sm">{st}</Text>
-                              </Checkbox>
-                            </motion.div>
-                          ))}
+                                <Box
+                                  as="label"
+                                  display="flex"
+                                  alignItems="center"
+                                  cursor="pointer"
+                                  padding={3}
+                                  borderRadius="md"
+                                  borderWidth={isSelected ? 2 : 1}
+                                  borderColor={isSelected ? 'blue.400' : 'gray.300'}
+                                  bg={isSelected ? 'blue.50' : 'white'}
+                                  _hover={{
+                                    borderColor: isSelected ? 'blue.500' : 'blue.300',
+                                    bg: isSelected ? 'blue.100' : 'blue.50',
+                                  }}
+                                  transition="all 0.2s"
+                                  width="100%"
+                                >
+                                  <Checkbox
+                                    value={st}
+                                    isChecked={isSelected}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                      handleSubtopicToggle(st, e.target.checked)
+                                    }
+                                    size="lg"
+                                    colorScheme="blue"
+                                    marginRight={3}
+                                    flexShrink={0}
+                                    sx={{
+                                      '& .chakra-checkbox__control': {
+                                        borderWidth: '2px',
+                                        borderColor: isSelected ? 'blue.500' : 'gray.400',
+                                        _checked: {
+                                          bg: 'blue.500',
+                                          borderColor: 'blue.500',
+                                        },
+                                      },
+                                    }}
+                                  />
+                                  <Text
+                                    fontWeight="medium"
+                                    fontSize="sm"
+                                    color={isSelected ? 'blue.700' : 'gray.700'}
+                                    flex={1}
+                                    userSelect="none"
+                                  >
+                                    {st}
+                                  </Text>
+                                </Box>
+                              </motion.div>
+                            );
+                          })}
                         </SimpleGrid>
                       </CheckboxGroup>
                     </Box>
@@ -614,9 +654,9 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.32, duration: 0.4 }}
             >
-              <FormControl>
+              <FormControl isRequired>
                 <FormLabel fontSize="md" fontWeight="semibold" color="gray.700">
-                  Time Limit (in minutes)
+                  Time Limit (in minutes) <Text as="span" color="red.500">*</Text>
                 </FormLabel>
                 <motion.div
                   whileHover={{ scale: 1.02 }}
@@ -632,20 +672,37 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
                         setTimeLimit(value);
                       }
                     }}
-                    placeholder="e.g., 30 (optional)"
+                    placeholder="10"
                     size="lg"
                     min={1}
                     borderRadius="xl"
                     borderWidth={2}
-                    borderColor="blue.200"
-                    _hover={{ borderColor: 'blue.400' }}
-                    _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 3px rgba(66, 153, 225, 0.2)' }}
+                    borderColor={isValidTimeLimit ? 'blue.200' : 'red.300'}
+                    _hover={{ borderColor: isValidTimeLimit ? 'blue.400' : 'red.400' }}
+                    _focus={{ 
+                      borderColor: isValidTimeLimit ? 'blue.500' : 'red.500', 
+                      boxShadow: isValidTimeLimit ? '0 0 0 3px rgba(66, 153, 225, 0.2)' : '0 0 0 3px rgba(229, 62, 62, 0.2)' 
+                    }}
                     transition="all 0.2s"
                   />
                 </motion.div>
                 <FormHelperText fontSize="sm" color="gray.600" marginTop={1}>
-                  Set quiz duration in minutes (optional).
+                  Set quiz duration in minutes (default: 10 minutes).
                 </FormHelperText>
+                <AnimatePresence mode="wait">
+                  {timeLimit && !isValidTimeLimit && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Text fontSize="sm" color="red.500" marginTop={1} fontWeight="medium">
+                        ⚠️ Please enter a valid time limit (minimum 1 minute)
+                      </Text>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </FormControl>
             </motion.div>
           </SimpleGrid>

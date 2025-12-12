@@ -12,6 +12,7 @@ import { StudyMode } from '@/components/StudyMode';
 import { QuizTutor } from '@/components/QuizTutor';
 import { QuizTutorErrorBoundary } from '@/components/QuizTutorErrorBoundary';
 import { QuizHistory } from '@/components/QuizHistory';
+import { QuizRankings } from '@/components/QuizRankings';
 import { StudyHistory } from '@/components/StudyHistory';
 import { StudyLibrary } from '@/components/StudyLibrary';
 import { StudyLibraryViewer } from '@/components/StudyLibraryViewer';
@@ -29,6 +30,7 @@ import { TopicManagement } from '@/components/admin/TopicManagement';
 import { QuizManagement } from '@/components/admin/QuizManagement';
 import { QuizHistoryManagement } from '@/components/admin/QuizHistoryManagement';
 import { StudyLibraryContentManagement } from '@/components/admin/StudyLibraryContentManagement';
+import { QuizResultsAnalytics } from '@/components/admin/QuizResultsAnalytics';
 import { authApi } from '@/services/api';
 import { User } from '@/types';
 import { QuizTimerProvider } from '@/contexts/QuizTimerContext';
@@ -127,7 +129,12 @@ export const App: React.FC = () => {
   return (
     <ChakraProvider theme={theme}>
       <QuizTimerProvider>
-        <BrowserRouter>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
         <Routes>
           <Route
             path="/"
@@ -212,6 +219,18 @@ export const App: React.FC = () => {
                 <StudentLayout user={user}>
                   <QuizHistory />
                 </StudentLayout>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/quiz-rankings"
+            element={
+              <AuthGuard>
+                <ModuleAccessGuard module="quiz">
+                  <StudentLayout user={user}>
+                    <QuizRankings />
+                  </StudentLayout>
+                </ModuleAccessGuard>
               </AuthGuard>
             }
           />
@@ -316,6 +335,16 @@ export const App: React.FC = () => {
               <AdminGuard>
                 <AdminLayout>
                   <AnalyticsDashboard />
+                </AdminLayout>
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="/admin/quiz-analytics"
+            element={
+              <AdminGuard>
+                <AdminLayout>
+                  <QuizResultsAnalytics />
                 </AdminLayout>
               </AdminGuard>
             }

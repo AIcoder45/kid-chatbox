@@ -325,11 +325,102 @@ router.get('/popular', async (req, res, next) => {
 /**
  * Get study session by ID
  * GET /api/study-library/:id
+ * Handles both regular study sessions and admin-created content (IDs starting with "admin_")
  */
 router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    // Check if this is an admin content ID
+    if (id.startsWith('admin_')) {
+      // Extract the actual ID (remove "admin_" prefix)
+      const actualId = id.replace(/^admin_/, '');
+
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(actualId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid content ID format',
+        });
+      }
+
+      let result;
+      try {
+        result = await pool.query(
+          `SELECT 
+            slc.*,
+            u.name as created_by_name,
+            u.id as created_by_id
+          FROM study_library_content slc
+          LEFT JOIN users u ON slc.created_by = u.id
+          WHERE slc.id = $1
+            AND slc.is_published = true
+            AND (slc.publish_date IS NULL OR slc.publish_date <= CURRENT_TIMESTAMP)`,
+          [actualId]
+        );
+      } catch (queryError) {
+        console.error('Database query error:', queryError);
+        throw queryError;
+      }
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Study content not found or not published',
+        });
+      }
+
+      const content = result.rows[0];
+
+      // Record view in activity_logs
+      if (req.user && req.user.id) {
+        try {
+          await pool.query(
+            `INSERT INTO activity_logs (user_id, action, resource_type, resource_id)
+             VALUES ($1, 'view_study_session', 'study_library_content', $2)`,
+            [req.user.id, actualId]
+          );
+        } catch (logError) {
+          // Don't fail the request if logging fails
+          console.error('Failed to log view:', logError);
+        }
+      }
+
+      // Format admin content to match expected session format
+      const session = {
+        id: `admin_${content.id}`,
+        lesson_title: content.title,
+        topic: content.subject || 'General',
+        subject: content.subject || '',
+        age: content.age_group ? parseInt(content.age_group.split('-')[0]) : null,
+        difficulty: content.difficulty || '',
+        language: content.language || 'English',
+        lesson_introduction: content.description || '',
+        lesson_summary: content.description || '',
+        lesson_explanation: null,
+        lesson_key_points: null,
+        lesson_examples: null,
+        created_by_name: content.created_by_name || 'Admin',
+        created_by_id: content.created_by_id || null,
+        timestamp: content.created_at || content.publish_date,
+        content_source: 'admin_content',
+        contentType: content.content_type,
+        fileUrl: content.file_url,
+        fileName: content.file_name,
+        fileSize: content.file_size,
+        textContent: content.text_content,
+        description: content.description,
+      };
+
+      res.json({
+        success: true,
+        session,
+      });
+      return;
+    }
+
+    // Regular study session lookup
     const result = await pool.query(
       `SELECT 
         ss.*,
@@ -351,11 +442,16 @@ router.get('/:id', async (req, res, next) => {
     const session = result.rows[0];
 
     // Record view in activity_logs
-    await pool.query(
-      `INSERT INTO activity_logs (user_id, action, resource_type, resource_id)
-       VALUES ($1, 'view_study_session', 'study_session', $2)`,
-      [req.user.id, id]
-    );
+    try {
+      await pool.query(
+        `INSERT INTO activity_logs (user_id, action, resource_type, resource_id)
+         VALUES ($1, 'view_study_session', 'study_session', $2)`,
+        [req.user.id, id]
+      );
+    } catch (logError) {
+      // Don't fail the request if logging fails
+      console.error('Failed to log view:', logError);
+    }
 
     // Parse JSON fields
     const parsedSession = {
@@ -379,6 +475,15 @@ router.get('/:id', async (req, res, next) => {
       session: parsedSession,
     });
   } catch (error) {
+    console.error('Error in GET /api/study-library/:id:', error);
+    // Send more detailed error information in development
+    if (process.env.NODE_ENV === 'development') {
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Internal server error',
+        error: error.stack,
+      });
+    }
     next(error);
   }
 });
