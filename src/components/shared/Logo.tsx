@@ -48,13 +48,17 @@ export const Logo: React.FC<LogoProps> = ({
   };
 
   // Handle responsive size objects or simple string sizes
-  const resolvedSize = typeof size === 'object' 
-    ? (useBreakpointValue(size, { fallback: 'md' }) as LogoSize)
-    : (size as LogoSize);
+  let resolvedSize: LogoSize = 'md';
+  if (size) {
+    if (typeof size === 'object') {
+      const breakpointSize = useBreakpointValue(size, { fallback: 'md' });
+      resolvedSize = (breakpointSize && sizeMap[breakpointSize as LogoSize]) ? (breakpointSize as LogoSize) : 'md';
+    } else if (sizeMap[size as LogoSize]) {
+      resolvedSize = size as LogoSize;
+    }
+  }
 
-  // Ensure we have a valid size, fallback to 'md'
-  const finalSize: LogoSize = (resolvedSize && sizeMap[resolvedSize]) ? resolvedSize : 'md';
-  const dimensions = sizeMap[finalSize];
+  const dimensions = sizeMap[resolvedSize];
 
   return (
     <HStack

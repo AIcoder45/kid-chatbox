@@ -8,7 +8,6 @@ import {
   HStack,
   Text,
   Button,
-  Heading,
   IconButton,
   Tooltip,
 } from '@/shared/design-system';
