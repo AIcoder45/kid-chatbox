@@ -9,13 +9,54 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 /**
+ * Get available quizzes for filtering (unique subject+subtopic combinations)
+ * GET /api/analytics/quiz-rankings/quizzes
+ */
+router.get('/quiz-rankings/quizzes', authenticateToken, async (req, res, next) => {
+  try {
+    const result = await pool.query(`
+      SELECT DISTINCT
+        subject,
+        subtopic,
+        COUNT(*) as attempt_count,
+        COUNT(DISTINCT user_id) as participant_count,
+        AVG(score_percentage) as avg_score,
+        MAX(timestamp) as last_attempt
+      FROM quiz_results
+      GROUP BY subject, subtopic
+      HAVING COUNT(*) > 0
+      ORDER BY last_attempt DESC, attempt_count DESC
+    `);
+
+    const quizzes = result.rows.map((row) => ({
+      id: `${row.subject}_${row.subtopic}`,
+      subject: row.subject,
+      subtopic: row.subtopic,
+      displayName: `${row.subject} - ${row.subtopic}`,
+      attemptCount: parseInt(row.attempt_count),
+      participantCount: parseInt(row.participant_count),
+      avgScore: Math.round(parseFloat(row.avg_score) || 0),
+      lastAttempt: row.last_attempt,
+    }));
+
+    res.json({
+      success: true,
+      quizzes,
+    });
+  } catch (error) {
+    console.error('Error fetching quiz list:', error);
+    next(error);
+  }
+});
+
+/**
  * Get quiz rankings (student accessible)
- * GET /api/analytics/quiz-rankings?subject=&subtopic=&sortBy=score|time|questions|composite
+ * GET /api/analytics/quiz-rankings?quizId=&subject=&subtopic=&sortBy=score|time|questions|composite
  * NOTE: This must come BEFORE /:userId route to avoid route conflict
  */
 router.get('/quiz-rankings', authenticateToken, async (req, res, next) => {
   try {
-    const { subject, subtopic, sortBy = 'composite', limit = 100 } = req.query;
+    const { quizId, subject, subtopic, sortBy = 'composite', limit = 100 } = req.query;
 
     let query = `
       SELECT 
@@ -40,16 +81,29 @@ router.get('/quiz-rankings', authenticateToken, async (req, res, next) => {
     const params = [];
     let paramCount = 0;
 
-    if (subject) {
+    // If quizId is provided, parse it to get subject and subtopic
+    if (quizId && typeof quizId === 'string' && quizId.includes('_')) {
+      const [quizSubject, ...subtopicParts] = quizId.split('_');
+      const quizSubtopic = subtopicParts.join('_');
       paramCount++;
-      query += ` AND qr.subject ILIKE $${paramCount}`;
-      params.push(`%${subject}%`);
-    }
+      query += ` AND qr.subject = $${paramCount}`;
+      params.push(quizSubject);
+      paramCount++;
+      query += ` AND qr.subtopic = $${paramCount}`;
+      params.push(quizSubtopic);
+    } else {
+      // Use individual subject/subtopic filters if quizId not provided
+      if (subject) {
+        paramCount++;
+        query += ` AND qr.subject ILIKE $${paramCount}`;
+        params.push(`%${subject}%`);
+      }
 
-    if (subtopic) {
-      paramCount++;
-      query += ` AND qr.subtopic ILIKE $${paramCount}`;
-      params.push(`%${subtopic}%`);
+      if (subtopic) {
+        paramCount++;
+        query += ` AND qr.subtopic ILIKE $${paramCount}`;
+        params.push(`%${subtopic}%`);
+      }
     }
 
     query += ` ORDER BY qr.timestamp DESC LIMIT $${++paramCount}`;

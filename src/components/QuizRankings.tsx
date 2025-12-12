@@ -42,7 +42,10 @@ export const QuizRankings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<any>(null);
+  const [availableQuizzes, setAvailableQuizzes] = useState<any[]>([]);
+  const [loadingQuizzes, setLoadingQuizzes] = useState(true);
   const [sortBy, setSortBy] = useState<'score' | 'time' | 'questions' | 'composite'>('composite');
+  const [selectedQuizId, setSelectedQuizId] = useState<string | undefined>(undefined);
   const [selectedSubject, setSelectedSubject] = useState<string | undefined>(undefined);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRank, setUserRank] = useState<number | null>(null);
@@ -50,20 +53,48 @@ export const QuizRankings: React.FC = () => {
   useEffect(() => {
     const { user } = authApi.getCurrentUser();
     setCurrentUser(user);
+    loadAvailableQuizzes();
   }, []);
 
   useEffect(() => {
     loadRankings();
-  }, [sortBy, selectedSubject]);
+  }, [sortBy, selectedQuizId, selectedSubject]);
 
   useEffect(() => {
     if (analytics && currentUser) {
-      const rank = analytics.leaderboard.findIndex(
+      // Filter to show only current user's records
+      const userRecords = analytics.leaderboard.filter(
         (p: any) => p.userId === (currentUser as { id: string }).id
       );
-      setUserRank(rank >= 0 ? rank + 1 : null);
+      if (userRecords.length > 0) {
+        // Find the rank in the full leaderboard
+        const rank = analytics.leaderboard.findIndex(
+          (p: any) => p.userId === (currentUser as { id: string }).id
+        );
+        setUserRank(rank >= 0 ? rank + 1 : null);
+      } else {
+        setUserRank(null);
+      }
     }
   }, [analytics, currentUser]);
+
+  const loadAvailableQuizzes = useCallback(async () => {
+    try {
+      setLoadingQuizzes(true);
+      const response = await apiClient.get('/analytics/quiz-rankings/quizzes');
+      if (response.data.success && response.data.quizzes) {
+        setAvailableQuizzes(response.data.quizzes);
+        // Auto-select first quiz if available
+        if (response.data.quizzes.length > 0 && !selectedQuizId) {
+          setSelectedQuizId(response.data.quizzes[0].id);
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to load available quizzes:', err);
+    } finally {
+      setLoadingQuizzes(false);
+    }
+  }, [selectedQuizId]);
 
   const loadRankings = useCallback(async () => {
     try {
@@ -71,6 +102,7 @@ export const QuizRankings: React.FC = () => {
       setError(null);
       const response = await apiClient.get('/analytics/quiz-rankings', {
         params: {
+          quizId: selectedQuizId,
           subject: selectedSubject,
           subtopic: undefined,
           sortBy,
@@ -85,7 +117,7 @@ export const QuizRankings: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [sortBy, selectedSubject]);
+  }, [sortBy, selectedQuizId, selectedSubject]);
 
   const getRankBadgeColor = (rank: number): string => {
     if (rank === 1) return 'yellow';
@@ -141,9 +173,45 @@ export const QuizRankings: React.FC = () => {
     );
   }
 
-  const userRanking = analytics.leaderboard.find(
+  // Filter to show only current user's records
+  const userRecords = analytics.leaderboard.filter(
     (p: any) => p.userId === (currentUser as { id: string })?.id
   );
+
+  const userRanking = userRecords.length > 0 ? userRecords[0] : null;
+
+  // Calculate user-specific summary
+  const userSummary = {
+    totalAttempts: userRecords.length,
+    totalParticipants: analytics.summary.totalParticipants, // Keep total for context
+    averageScore: userRecords.length > 0
+      ? Math.round(userRecords.reduce((sum: number, p: any) => sum + p.scorePercentage, 0) / userRecords.length)
+      : 0,
+    averageTime: userRecords.length > 0
+      ? Math.round(userRecords.reduce((sum: number, p: any) => sum + p.timeTaken, 0) / userRecords.length)
+      : 0,
+  };
+
+  if (!analytics || userRecords.length === 0) {
+    return (
+      <PullToRefresh onRefresh={handleRefresh}>
+        <Box p={6} maxWidth="1400px" marginX="auto">
+          <VStack spacing={6} align="stretch">
+            <HStack justify="space-between" align="center">
+              <Heading size="lg">🏆 My Quiz Rankings</Heading>
+              <Button onClick={loadRankings} size="sm">
+                Refresh
+              </Button>
+            </HStack>
+            <Alert status="info">
+              <AlertIcon />
+              No quiz attempts found. Complete quizzes to see your rankings!
+            </Alert>
+          </VStack>
+        </Box>
+      </PullToRefresh>
+    );
+  }
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
@@ -151,7 +219,7 @@ export const QuizRankings: React.FC = () => {
         <VStack spacing={6} align="stretch">
           {/* Header */}
           <HStack justify="space-between" align="center">
-            <Heading size="lg">🏆 Quiz Rankings</Heading>
+            <Heading size="lg">🏆 My Quiz Rankings</Heading>
             <Button onClick={loadRankings} size="sm">
               Refresh
             </Button>
@@ -160,22 +228,22 @@ export const QuizRankings: React.FC = () => {
           {/* Summary Stats */}
           <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4}>
             <Stat>
-              <StatLabel>Total Participants</StatLabel>
-              <StatNumber>{analytics.summary.totalParticipants}</StatNumber>
-              <StatHelpText>Students competing</StatHelpText>
+              <StatLabel>My Total Attempts</StatLabel>
+              <StatNumber>{userSummary.totalAttempts}</StatNumber>
+              <StatHelpText>Quizzes completed</StatHelpText>
             </Stat>
             <Stat>
-              <StatLabel>Total Attempts</StatLabel>
-              <StatNumber>{analytics.summary.totalAttempts}</StatNumber>
-              <StatHelpText>Quiz completions</StatHelpText>
+              <StatLabel>My Average Score</StatLabel>
+              <StatNumber>{userSummary.averageScore}%</StatNumber>
+              <StatHelpText>Across all my quizzes</StatHelpText>
             </Stat>
             <Stat>
-              <StatLabel>Average Score</StatLabel>
-              <StatNumber>{analytics.summary.averageScore}%</StatNumber>
-              <StatHelpText>Across all quizzes</StatHelpText>
+              <StatLabel>Average Time</StatLabel>
+              <StatNumber>{Math.floor(userSummary.averageTime / 60)}m</StatNumber>
+              <StatHelpText>{userSummary.averageTime % 60}s per quiz</StatHelpText>
             </Stat>
             <Stat>
-              <StatLabel>Your Rank</StatLabel>
+              <StatLabel>Best Rank</StatLabel>
               <StatNumber>
                 {userRank ? `#${userRank}` : 'N/A'}
               </StatNumber>
@@ -202,9 +270,12 @@ export const QuizRankings: React.FC = () => {
                           {getRankIcon(userRanking.rank)}
                         </Badge>
                         <Text fontSize="2xl" fontWeight="bold">
-                          #{userRanking.rank} out of {analytics.summary.totalParticipants}
+                          #{userRanking.rank} out of {analytics.summary.totalParticipants} participants
                         </Text>
                       </HStack>
+                      <Text fontSize="sm" color="gray.500" mt={1}>
+                        Quiz: <strong>{userRanking.subject} - {userRanking.subtopic}</strong>
+                      </Text>
                     </VStack>
                     <VStack align="end" spacing={1}>
                       <Text fontSize="sm" color="gray.600">
@@ -258,7 +329,30 @@ export const QuizRankings: React.FC = () => {
             <CardBody>
               <VStack spacing={4} align="stretch">
                 <Heading size="sm">Filters & Sorting</Heading>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                  <Box>
+                    <Text mb={2} fontSize="sm" fontWeight="semibold">
+                      Select Quiz:
+                    </Text>
+                    {loadingQuizzes ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <Select
+                        value={selectedQuizId || ''}
+                        onChange={(e) => {
+                          setSelectedQuizId(e.target.value || undefined);
+                          setSelectedSubject(undefined); // Reset subject filter when quiz changes
+                        }}
+                      >
+                        <option value="">All Quizzes</option>
+                        {availableQuizzes.map((quiz) => (
+                          <option key={quiz.id} value={quiz.id}>
+                            {quiz.displayName} ({quiz.participantCount} participants, {quiz.attemptCount} attempts)
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </Box>
                   <Box>
                     <Text mb={2} fontSize="sm" fontWeight="semibold">
                       Sort By:
@@ -272,14 +366,18 @@ export const QuizRankings: React.FC = () => {
                   </Box>
                   <Box>
                     <Text mb={2} fontSize="sm" fontWeight="semibold">
-                      Subject:
+                      Subject (if no quiz selected):
                     </Text>
                     <Select
                       value={selectedSubject || ''}
-                      onChange={(e) => setSelectedSubject(e.target.value || undefined)}
+                      onChange={(e) => {
+                        setSelectedSubject(e.target.value || undefined);
+                        setSelectedQuizId(undefined); // Reset quiz filter when subject changes
+                      }}
+                      disabled={!!selectedQuizId}
                     >
                       <option value="">All Subjects</option>
-                      {Object.keys(analytics.summary.subjects).map((subject) => (
+                      {analytics && Object.keys(analytics.summary.subjects).map((subject) => (
                         <option key={subject} value={subject}>
                           {subject} ({analytics.summary.subjects[subject].attempts} attempts)
                         </option>
@@ -287,6 +385,23 @@ export const QuizRankings: React.FC = () => {
                     </Select>
                   </Box>
                 </SimpleGrid>
+                {selectedQuizId && (
+                  <Alert status="info" borderRadius="md">
+                    <AlertIcon />
+                    <Text fontSize="sm">
+                      Showing your attempts for:{' '}
+                      <strong>
+                        {availableQuizzes.find((q) => q.id === selectedQuizId)?.displayName}
+                      </strong>
+                    </Text>
+                  </Alert>
+                )}
+                <Alert status="info" borderRadius="md">
+                  <AlertIcon />
+                  <Text fontSize="sm">
+                    <strong>Note:</strong> You are viewing only your own quiz attempts. Your rank is shown relative to all participants.
+                  </Text>
+                </Alert>
               </VStack>
             </CardBody>
           </Card>
@@ -295,10 +410,14 @@ export const QuizRankings: React.FC = () => {
           <Card>
             <CardBody>
               <VStack spacing={4} align="stretch">
-                <HStack justify="space-between">
-                  <Heading size="md">📊 Leaderboard</Heading>
-                  <Badge colorScheme="blue">
-                    {analytics.summary.totalParticipants} Participants
+                <HStack justify="space-between" align="center">
+                  <Heading size="md">
+                    {selectedQuizId
+                      ? `📊 My Quiz Attempts: ${availableQuizzes.find((q) => q.id === selectedQuizId)?.displayName || 'Selected Quiz'}`
+                      : '📊 My Quiz Attempts'}
+                  </Heading>
+                  <Badge colorScheme="blue" fontSize="sm" p={2}>
+                    {userRecords.length} Attempt{userRecords.length !== 1 ? 's' : ''}
                   </Badge>
                 </HStack>
                 <Text fontSize="sm" color="gray.600">
@@ -310,23 +429,21 @@ export const QuizRankings: React.FC = () => {
                     <Thead>
                       <Tr>
                         <Th>Rank</Th>
-                        <Th>Student</Th>
-                        <Th>Subject</Th>
-                        <Th>Subtopic</Th>
+                        <Th>Quiz Name</Th>
                         <Th isNumeric>Score</Th>
                         <Th isNumeric>Correct</Th>
                         <Th isNumeric>Time</Th>
                         <Th isNumeric>Composite</Th>
+                        <Th>Date</Th>
                       </Tr>
                     </Thead>
                     <Tbody>
-                      {analytics.leaderboard.slice(0, 50).map((participant: any) => {
-                        const isCurrentUser = participant.userId === (currentUser as { id: string })?.id;
+                      {userRecords.map((participant: any) => {
                         return (
                           <Tr
                             key={participant.attemptId}
-                            bg={isCurrentUser ? 'blue.50' : 'transparent'}
-                            fontWeight={isCurrentUser ? 'bold' : 'normal'}
+                            bg="blue.50"
+                            fontWeight="bold"
                           >
                             <Td>
                               <Badge
@@ -338,23 +455,9 @@ export const QuizRankings: React.FC = () => {
                               </Badge>
                             </Td>
                             <Td>
-                              <VStack align="start" spacing={0}>
-                                <Text fontWeight={isCurrentUser ? 'bold' : 'semibold'}>
-                                  {isCurrentUser ? '👤 ' : ''}
-                                  {participant.userName}
-                                </Text>
-                                {isCurrentUser && (
-                                  <Text fontSize="xs" color="blue.600" fontWeight="bold">
-                                    (You)
-                                  </Text>
-                                )}
-                              </VStack>
-                            </Td>
-                            <Td>
-                              <Badge colorScheme="blue">{participant.subject || 'N/A'}</Badge>
-                            </Td>
-                            <Td>
-                              <Text fontSize="sm">{participant.subtopic || 'N/A'}</Text>
+                              <Text fontSize="sm" fontWeight="semibold">
+                                {participant.subject || 'N/A'} - {participant.subtopic || 'N/A'}
+                              </Text>
                             </Td>
                             <Td isNumeric>
                               <Text fontWeight="bold" color="blue.600">
@@ -368,6 +471,13 @@ export const QuizRankings: React.FC = () => {
                             <Td isNumeric>
                               <Text fontWeight="bold" color="green.600">
                                 {participant.compositeScore?.toFixed(1) || 'N/A'}
+                              </Text>
+                            </Td>
+                            <Td>
+                              <Text fontSize="xs" color="gray.600">
+                                {participant.timestamp
+                                  ? new Date(participant.timestamp).toLocaleDateString()
+                                  : 'N/A'}
                               </Text>
                             </Td>
                           </Tr>
