@@ -9,12 +9,30 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 /**
- * Get available quizzes for filtering (unique subject+subtopic combinations)
+ * Get available quizzes for filtering
+ * Fetches from quiz_library table and also includes quizzes from quiz_results
  * GET /api/analytics/quiz-rankings/quizzes
  */
 router.get('/quiz-rankings/quizzes', authenticateToken, async (req, res, next) => {
   try {
-    const result = await pool.query(`
+    // Fetch quizzes from quiz_library table
+    const libraryQuizzesResult = await pool.query(`
+      SELECT 
+        id,
+        title,
+        subject,
+        subtopics,
+        difficulty,
+        question_count,
+        created_at,
+        is_active
+      FROM quiz_library
+      WHERE is_active = true
+      ORDER BY created_at DESC
+    `);
+
+    // Fetch unique quizzes from quiz_results (for AI-generated quizzes)
+    const resultsQuizzesResult = await pool.query(`
       SELECT DISTINCT
         subject,
         subtopic,
@@ -28,7 +46,30 @@ router.get('/quiz-rankings/quizzes', authenticateToken, async (req, res, next) =
       ORDER BY last_attempt DESC, attempt_count DESC
     `);
 
-    const quizzes = result.rows.map((row) => ({
+    // Map quiz_library quizzes
+    const libraryQuizzes = libraryQuizzesResult.rows.map((row) => {
+      const subtopic = Array.isArray(row.subtopics) && row.subtopics.length > 0 
+        ? row.subtopics[0] 
+        : 'General';
+      return {
+        id: `library_${row.id}`,
+        libraryId: row.id,
+        title: row.title,
+        subject: row.subject,
+        subtopic: subtopic,
+        displayName: row.title,
+        difficulty: row.difficulty,
+        questionCount: row.question_count,
+        attemptCount: 0, // Will be updated if found in results
+        participantCount: 0,
+        avgScore: 0,
+        lastAttempt: row.created_at,
+        source: 'library',
+      };
+    });
+
+    // Map quiz_results quizzes
+    const resultsQuizzes = resultsQuizzesResult.rows.map((row) => ({
       id: `${row.subject}_${row.subtopic}`,
       subject: row.subject,
       subtopic: row.subtopic,
@@ -37,11 +78,46 @@ router.get('/quiz-rankings/quizzes', authenticateToken, async (req, res, next) =
       participantCount: parseInt(row.participant_count),
       avgScore: Math.round(parseFloat(row.avg_score) || 0),
       lastAttempt: row.last_attempt,
+      source: 'results',
     }));
+
+    // Merge quizzes - prioritize library quizzes, add results data if matching
+    const mergedQuizzes = libraryQuizzes.map((libQuiz) => {
+      const matchingResult = resultsQuizzes.find(
+        (r) => r.subject === libQuiz.subject && r.subtopic === libQuiz.subtopic
+      );
+      if (matchingResult) {
+        return {
+          ...libQuiz,
+          attemptCount: matchingResult.attemptCount,
+          participantCount: matchingResult.participantCount,
+          avgScore: matchingResult.avgScore,
+          lastAttempt: matchingResult.lastAttempt,
+        };
+      }
+      return libQuiz;
+    });
+
+    // Add results quizzes that don't have a library match
+    const unmatchedResults = resultsQuizzes.filter(
+      (r) => !libraryQuizzes.some(
+        (l) => l.subject === r.subject && l.subtopic === r.subtopic
+      )
+    );
+
+    const allQuizzes = [...mergedQuizzes, ...unmatchedResults];
+
+    // Sort by last attempt and attempt count
+    allQuizzes.sort((a, b) => {
+      const dateA = new Date(a.lastAttempt || 0).getTime();
+      const dateB = new Date(b.lastAttempt || 0).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      return (b.attemptCount || 0) - (a.attemptCount || 0);
+    });
 
     res.json({
       success: true,
-      quizzes,
+      quizzes: allQuizzes,
     });
   } catch (error) {
     console.error('Error fetching quiz list:', error);
@@ -81,16 +157,38 @@ router.get('/quiz-rankings', authenticateToken, async (req, res, next) => {
     const params = [];
     let paramCount = 0;
 
-    // If quizId is provided, parse it to get subject and subtopic
-    if (quizId && typeof quizId === 'string' && quizId.includes('_')) {
-      const [quizSubject, ...subtopicParts] = quizId.split('_');
-      const quizSubtopic = subtopicParts.join('_');
-      paramCount++;
-      query += ` AND qr.subject = $${paramCount}`;
-      params.push(quizSubject);
-      paramCount++;
-      query += ` AND qr.subtopic = $${paramCount}`;
-      params.push(quizSubtopic);
+    // If quizId is provided, parse it to get subject and subtopic or library ID
+    if (quizId && typeof quizId === 'string') {
+      if (quizId.startsWith('library_')) {
+        // This is a library quiz - we need to get subject/subtopic from quiz_library
+        const libraryId = quizId.replace('library_', '');
+        const libraryResult = await pool.query(
+          'SELECT subject, subtopics FROM quiz_library WHERE id = $1',
+          [libraryId]
+        );
+        if (libraryResult.rows.length > 0) {
+          const libQuiz = libraryResult.rows[0];
+          const subtopic = Array.isArray(libQuiz.subtopics) && libQuiz.subtopics.length > 0 
+            ? libQuiz.subtopics[0] 
+            : 'General';
+          paramCount++;
+          query += ` AND qr.subject = $${paramCount}`;
+          params.push(libQuiz.subject);
+          paramCount++;
+          query += ` AND qr.subtopic = $${paramCount}`;
+          params.push(subtopic);
+        }
+      } else if (quizId.includes('_')) {
+        // This is a subject_subtopic format
+        const [quizSubject, ...subtopicParts] = quizId.split('_');
+        const quizSubtopic = subtopicParts.join('_');
+        paramCount++;
+        query += ` AND qr.subject = $${paramCount}`;
+        params.push(quizSubject);
+        paramCount++;
+        query += ` AND qr.subtopic = $${paramCount}`;
+        params.push(quizSubtopic);
+      }
     } else {
       // Use individual subject/subtopic filters if quizId not provided
       if (subject) {

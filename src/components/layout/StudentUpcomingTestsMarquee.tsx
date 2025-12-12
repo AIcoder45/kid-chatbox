@@ -110,20 +110,20 @@ export const StudentUpcomingTestsMarquee: React.FC = () => {
   }
 
   const marqueeContent = (
-    <HStack spacing={6} display="inline-flex">
-      <Text fontSize="sm" fontWeight="medium" color="blue.700" _dark={{ color: 'blue.300' }}>
+    <HStack spacing={{ base: 4, md: 6 }} display="inline-flex">
+      <Text fontSize={{ base: 'xs', md: 'sm' }} fontWeight="medium" color="blue.700" _dark={{ color: 'blue.300' }}>
         📅 Upcoming Tests:
       </Text>
       {upcomingTests.map((test, index) => (
-        <HStack key={test.id} spacing={2} display="inline-flex">
-          <Text fontSize="sm" color="gray.700" _dark={{ color: 'gray.300' }}>
+        <HStack key={test.id} spacing={{ base: 1, md: 2 }} display="inline-flex">
+          <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.700" _dark={{ color: 'gray.300' }}>
             {test.quizName || 'Untitled Quiz'}
           </Text>
-          <Text fontSize="xs" color="gray.500" _dark={{ color: 'gray.400' }}>
+          <Text fontSize={{ base: '2xs', md: 'xs' }} color="gray.500" _dark={{ color: 'gray.400' }}>
             ({formatDate(test.scheduledFor)})
           </Text>
           {index < upcomingTests.length - 1 && (
-            <Text fontSize="sm" color="gray.400" mx={2}>
+            <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.400" mx={{ base: 1, md: 2 }}>
               •
             </Text>
           )}
@@ -137,8 +137,8 @@ export const StudentUpcomingTestsMarquee: React.FC = () => {
       overflow="hidden"
       whiteSpace="nowrap"
       bg="blue.50"
-      py={2}
-      px={4}
+      py={{ base: 1.5, md: 2 }}
+      px={{ base: 2, md: 4 }}
       borderBottom="1px"
       borderColor="gray.200"
       _dark={{ bg: 'blue.900', borderColor: 'gray.700' }}
@@ -154,7 +154,7 @@ export const StudentUpcomingTestsMarquee: React.FC = () => {
           animation: 'scroll 30s linear infinite',
         }}
       >
-        <HStack spacing={6} display="inline-flex">
+        <HStack spacing={{ base: 4, md: 6 }} display="inline-flex">
           {marqueeContent}
           {marqueeContent}
         </HStack>

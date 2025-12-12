@@ -125,14 +125,14 @@ export const UpcomingTestsSidebar: React.FC = () => {
 
   if (loading) {
     return (
-      <Box w={{ base: '100%', lg: '300px' }} position={{ base: 'relative', lg: 'sticky' }} top={{ lg: '100px' }}>
+      <Box w="100%" position={{ base: 'relative', lg: 'sticky' }} top={{ lg: '100px' }}>
         <Card>
-          <CardBody>
+          <CardBody p={{ base: 3, md: 4 }}>
             <VStack spacing={4}>
-              <Heading size="sm" color="blue.600">
+              <Heading size={{ base: 'xs', md: 'sm' }} color="blue.600">
                 📅 Upcoming Tests
               </Heading>
-              <Spinner size="sm" />
+              <Spinner size={{ base: 'xs', md: 'sm' }} />
             </VStack>
           </CardBody>
         </Card>
@@ -146,19 +146,19 @@ export const UpcomingTestsSidebar: React.FC = () => {
 
   return (
     <Box
-      w={{ base: '100%', lg: '300px' }}
+      w="100%"
       position={{ base: 'relative', lg: 'sticky' }}
       top={{ lg: '100px' }}
       alignSelf="start"
     >
       <Card borderWidth={2} borderColor="blue.200" bg="blue.50" _dark={{ bg: 'blue.900' }}>
-        <CardBody p={4}>
-          <VStack spacing={3} align="stretch">
-            <Heading size="sm" color="blue.700" _dark={{ color: 'blue.300' }}>
+        <CardBody p={{ base: 3, md: 4 }}>
+          <VStack spacing={{ base: 3, md: 4 }} align="stretch">
+            <Heading size={{ base: 'xs', md: 'sm' }} color="blue.700" _dark={{ color: 'blue.300' }}>
               📅 Upcoming Tests
             </Heading>
 
-            <VStack spacing={2} align="stretch">
+            <VStack spacing={{ base: 2, md: 3 }} align="stretch">
               {upcomingTests.map((test) => {
                 const now = new Date();
                 const visibleFrom = new Date(test.visibleFrom);
@@ -167,24 +167,32 @@ export const UpcomingTestsSidebar: React.FC = () => {
                 return (
                   <Box
                     key={test.id}
-                    p={3}
+                    p={{ base: 2, md: 3 }}
                     bg="white"
                     borderRadius="md"
                     borderWidth="1px"
                     borderColor="blue.200"
                     _dark={{ bg: 'gray.800', borderColor: 'gray.700' }}
                   >
-                    <VStack spacing={2} align="stretch">
-                      <HStack justify="space-between">
-                        <Text fontSize="sm" fontWeight="bold" color="blue.700" _dark={{ color: 'blue.300' }} noOfLines={2}>
+                    <VStack spacing={{ base: 2, md: 3 }} align="stretch">
+                      <HStack justify="space-between" flexWrap="wrap" spacing={2}>
+                        <Text 
+                          fontSize={{ base: 'xs', md: 'sm' }} 
+                          fontWeight="bold" 
+                          color="blue.700" 
+                          _dark={{ color: 'blue.300' }} 
+                          noOfLines={2}
+                          flex={1}
+                          minW={{ base: '100%', sm: 'auto' }}
+                        >
                           {test.quizName || 'Untitled Quiz'}
                         </Text>
-                        <Badge colorScheme={isAvailable ? 'green' : 'blue'} fontSize="xs">
+                        <Badge colorScheme={isAvailable ? 'green' : 'blue'} fontSize={{ base: '2xs', md: 'xs' }}>
                           {isAvailable ? 'Available' : 'Upcoming'}
                         </Badge>
                       </HStack>
 
-                      <VStack spacing={1} align="start" fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }}>
+                      <VStack spacing={1} align="start" fontSize={{ base: '2xs', md: 'xs' }} color="gray.600" _dark={{ color: 'gray.400' }}>
                         <Text>
                           <Text as="span" fontWeight="semibold">Date:</Text> {formatDate(test.scheduledFor)}
                         </Text>
@@ -226,7 +234,7 @@ export const UpcomingTestsSidebar: React.FC = () => {
             </VStack>
 
             <Button
-              size="sm"
+              size={{ base: 'xs', md: 'sm' }}
               variant="ghost"
               colorScheme="blue"
               onClick={() => navigate('/scheduled-tests')}

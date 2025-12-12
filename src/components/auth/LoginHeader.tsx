@@ -14,6 +14,7 @@ import {
 } from '@/shared/design-system';
 import { useFontSize } from '@/contexts/FontSizeContext';
 import { LOGIN_CONSTANTS } from '@/constants/auth';
+import { Logo } from '@/components/shared/Logo';
 
 /**
  * Header component for login page with font size controls
@@ -43,16 +44,11 @@ export const LoginHeader: React.FC = () => {
     >
       <HStack justifyContent="space-between" alignItems="center" maxW="7xl" mx="auto">
         {/* Left: Logo/Title */}
-        <Heading
+        <Logo
+          showText={true}
           size="md"
-          color="blue.600"
-          cursor="pointer"
           onClick={handleGoHome}
-          _hover={{ color: 'blue.700' }}
-          transition="color 0.2s"
-        >
-          {LOGIN_CONSTANTS.BRAND_LOGO} {LOGIN_CONSTANTS.BRAND_NAME}
-        </Heading>
+        />
 
         {/* Right: Font Size Controls */}
         <HStack spacing={2}>

@@ -160,6 +160,65 @@ router.post('/results', authenticateToken, checkModuleAccess('quiz'), async (req
 });
 
 /**
+ * Get quiz result details by ID (student accessible - only their own results)
+ * GET /api/quiz/results/:id
+ */
+router.get('/results/:id', authenticateToken, checkModuleAccess('quiz'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `SELECT 
+        qr.id,
+        qr.user_id,
+        qr.timestamp,
+        qr.subject,
+        qr.subtopic,
+        qr.age,
+        qr.language,
+        qr.correct_count,
+        qr.wrong_count,
+        qr.time_taken,
+        qr.score_percentage,
+        qr.explanation_of_mistakes,
+        u.name as user_name,
+        u.email as user_email,
+        json_agg(
+          json_build_object(
+            'questionNumber', qa.question_number,
+            'question', qa.question,
+            'childAnswer', qa.child_answer,
+            'correctAnswer', qa.correct_answer,
+            'explanation', qa.explanation,
+            'isCorrect', qa.is_correct,
+            'options', qa.options
+          )
+        ) as answers
+      FROM quiz_results qr
+      LEFT JOIN users u ON qr.user_id = u.id
+      LEFT JOIN quiz_answers qa ON qr.id = qa.quiz_result_id
+      WHERE qr.id = $1 AND qr.user_id = $2
+      GROUP BY qr.id, u.name, u.email`,
+      [id, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Quiz result not found or access denied',
+      });
+    }
+
+    res.json({
+      success: true,
+      result: result.rows[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * Get user's quiz history
  */
 router.get('/history/:userId', authenticateToken, checkModuleAccess('quiz'), async (req, res, next) => {

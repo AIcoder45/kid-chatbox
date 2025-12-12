@@ -166,6 +166,41 @@ export const quizApi = {
   /**
    * Get user's quiz history
    */
+  /**
+   * Get quiz result details by ID (student accessible - only their own results)
+   */
+  getQuizResultDetails: async (id: string): Promise<{
+    success: boolean;
+    result: {
+      id: string;
+      user_id: string;
+      timestamp: string;
+      subject: string;
+      subtopic: string;
+      age: number;
+      language: string;
+      correct_count: number;
+      wrong_count: number;
+      time_taken: number;
+      score_percentage: number;
+      explanation_of_mistakes: string;
+      user_name: string;
+      user_email: string;
+      answers: Array<{
+        questionNumber: number;
+        question: string;
+        childAnswer: string;
+        correctAnswer: string;
+        explanation: string;
+        isCorrect: boolean;
+        options: unknown;
+      }>;
+    };
+  }> => {
+    const response = await apiClient.get(`/quiz/results/${id}`);
+    return response.data;
+  },
+
   getQuizHistory: async (userId: string): Promise<QuizHistoryResponse> => {
     const response = await apiClient.get<QuizHistoryResponse>(`/quiz/history/${userId}`);
     return response.data;

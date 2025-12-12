@@ -9,7 +9,6 @@ import {
   HStack,
   Text,
   Button,
-  Heading,
   Avatar,
   Menu,
   MenuButton,
@@ -24,8 +23,8 @@ import {
 import { authApi } from '@/services/api';
 import { User } from '@/types';
 import { useFontSize } from '@/contexts/FontSizeContext';
-import { APP_CONSTANTS } from '@/constants/app';
 import { useQuizTimer } from '@/contexts/QuizTimerContext';
+import { Logo } from '@/components/shared/Logo';
 
 interface HeaderProps {
   user?: User | null;
@@ -42,7 +41,6 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
   const headerBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const fontControlBg = useColorModeValue('gray.100', 'gray.700');
-  const headingColor = useColorModeValue('blue.600', 'blue.400');
   const [showStickyTimer, setShowStickyTimer] = useState(false);
   
   // Try to get quiz timer context (may not be available)
@@ -115,16 +113,17 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
           <Box paddingY={{ base: 2, md: 3 }} paddingX={{ base: 4, md: 6 }}>
             <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={{ base: 2, md: 4 }}>
             {/* Left: Logo/Title - Aligned with Dashboard content */}
-            <Heading
-              size={{ base: 'sm', md: 'md' }}
-              color={headingColor}
-              cursor="pointer"
-              onClick={handleGoHome}
+            <Box
               flex={{ base: 1, md: 'none' }}
-              textAlign={{ base: 'center', md: 'left' }}
+              display="flex"
+              justifyContent={{ base: 'center', md: 'flex-start' }}
             >
-              🎓 {APP_CONSTANTS.BRAND_NAME}
-            </Heading>
+              <Logo
+                showText={true}
+                size="md"
+                onClick={handleGoHome}
+              />
+            </Box>
 
             {/* Quiz Timer in Header (when quiz is active) */}
             {quizTimer?.isQuizActive && location.pathname === '/quiz' && (

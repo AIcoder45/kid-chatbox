@@ -30,9 +30,24 @@ import {
   StatHelpText,
   SimpleGrid,
   Divider,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
+  useToast,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Input,
 } from '@/shared/design-system';
-import { apiClient, authApi } from '@/services/api';
+import { apiClient, authApi, quizApi } from '@/services/api';
 import { PullToRefresh } from './PullToRefresh';
+import { generateCertificate } from '@/utils/certificate';
 
 /**
  * Quiz Rankings component for students
@@ -49,6 +64,11 @@ export const QuizRankings: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string | undefined>(undefined);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRank, setUserRank] = useState<number | null>(null);
+  const [selectedQuizDetails, setSelectedQuizDetails] = useState<any>(null);
+  const [quizSearchQuery, setQuizSearchQuery] = useState<string>('');
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isQuizMenuOpen, onOpen: onQuizMenuOpen, onClose: onQuizMenuClose } = useDisclosure();
+  const toast = useToast();
 
   useEffect(() => {
     const { user } = authApi.getCurrentUser();
@@ -137,6 +157,70 @@ export const QuizRankings: React.FC = () => {
     await loadRankings();
   };
 
+  const handleViewDetails = async (attemptId: string) => {
+    try {
+      const response = await quizApi.getQuizResultDetails(attemptId);
+      if (response.success && response.result) {
+        // Normalize numeric fields and parse options if they're strings
+        const normalizedResult = {
+          ...response.result,
+          score_percentage:
+            typeof response.result.score_percentage === 'number'
+              ? response.result.score_percentage
+              : Number(response.result.score_percentage || 0),
+          time_taken:
+            typeof response.result.time_taken === 'number'
+              ? response.result.time_taken
+              : Number(response.result.time_taken || 0),
+          correct_count:
+            typeof response.result.correct_count === 'number'
+              ? response.result.correct_count
+              : Number(response.result.correct_count || 0),
+          wrong_count:
+            typeof response.result.wrong_count === 'number'
+              ? response.result.wrong_count
+              : Number(response.result.wrong_count || 0),
+          answers: (response.result.answers || []).map((answer: any) => ({
+            ...answer,
+            options:
+              typeof answer.options === 'string'
+                ? JSON.parse(answer.options)
+                : answer.options,
+          })),
+        };
+        setSelectedQuizDetails(normalizedResult);
+        onOpen();
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to load quiz details',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
+  const formatDate = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins > 0) {
+      return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
+  };
+
   if (loading) {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
@@ -173,17 +257,19 @@ export const QuizRankings: React.FC = () => {
     );
   }
 
-  // Filter to show only current user's records
-  const userRecords = analytics.leaderboard.filter(
+  // Show all participants, but identify current user's records
+  const allParticipants = analytics.leaderboard || [];
+  const userRecords = allParticipants.filter(
     (p: any) => p.userId === (currentUser as { id: string })?.id
   );
-
-  const userRanking = userRecords.length > 0 ? userRecords[0] : null;
+  const userRanking = allParticipants.find(
+    (p: any) => p.userId === (currentUser as { id: string })?.id
+  );
 
   // Calculate user-specific summary
   const userSummary = {
     totalAttempts: userRecords.length,
-    totalParticipants: analytics.summary.totalParticipants, // Keep total for context
+    totalParticipants: analytics.summary.totalParticipants,
     averageScore: userRecords.length > 0
       ? Math.round(userRecords.reduce((sum: number, p: any) => sum + p.scorePercentage, 0) / userRecords.length)
       : 0,
@@ -192,7 +278,7 @@ export const QuizRankings: React.FC = () => {
       : 0,
   };
 
-  if (!analytics || userRecords.length === 0) {
+  if (!analytics || allParticipants.length === 0) {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
         <Box p={6} maxWidth="1400px" marginX="auto">
@@ -337,20 +423,70 @@ export const QuizRankings: React.FC = () => {
                     {loadingQuizzes ? (
                       <Spinner size="sm" />
                     ) : (
-                      <Select
-                        value={selectedQuizId || ''}
-                        onChange={(e) => {
-                          setSelectedQuizId(e.target.value || undefined);
-                          setSelectedSubject(undefined); // Reset subject filter when quiz changes
-                        }}
-                      >
-                        <option value="">All Quizzes</option>
-                        {availableQuizzes.map((quiz) => (
-                          <option key={quiz.id} value={quiz.id}>
-                            {quiz.displayName} ({quiz.participantCount} participants, {quiz.attemptCount} attempts)
-                          </option>
-                        ))}
-                      </Select>
+                      <Menu isOpen={isQuizMenuOpen} onOpen={onQuizMenuOpen} onClose={onQuizMenuClose}>
+                        <MenuButton
+                          as={Button}
+                          rightIcon={<Text>▼</Text>}
+                          w="100%"
+                          textAlign="left"
+                          variant="outline"
+                        >
+                          {selectedQuizId
+                            ? availableQuizzes.find((q) => q.id === selectedQuizId)?.displayName || 'Select a quiz...'
+                            : 'Select a quiz...'}
+                        </MenuButton>
+                        <MenuList maxH="300px" overflowY="auto">
+                          <Box px={3} py={2}>
+                            <Input
+                              placeholder="Search quizzes..."
+                              value={quizSearchQuery}
+                              onChange={(e) => setQuizSearchQuery(e.target.value)}
+                              size="sm"
+                              mb={2}
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => e.stopPropagation()}
+                            />
+                          </Box>
+                          {availableQuizzes
+                            .filter((quiz) =>
+                              !quizSearchQuery ||
+                              quiz.displayName.toLowerCase().includes(quizSearchQuery.toLowerCase()) ||
+                              quiz.subject?.toLowerCase().includes(quizSearchQuery.toLowerCase()) ||
+                              quiz.subtopic?.toLowerCase().includes(quizSearchQuery.toLowerCase())
+                            )
+                            .map((quiz) => (
+                              <MenuItem
+                                key={quiz.id}
+                                onClick={() => {
+                                  setSelectedQuizId(quiz.id);
+                                  setSelectedSubject(undefined);
+                                  setQuizSearchQuery('');
+                                  onQuizMenuClose();
+                                }}
+                              >
+                                <VStack align="start" spacing={0} w="100%">
+                                  <Text fontWeight="medium">{quiz.displayName}</Text>
+                                  <Text fontSize="xs" color="gray.500">
+                                    {quiz.participantCount} participants • {quiz.attemptCount} attempts
+                                  </Text>
+                                </VStack>
+                              </MenuItem>
+                            ))}
+                          {availableQuizzes.filter(
+                            (quiz) =>
+                              !quizSearchQuery ||
+                              quiz.displayName.toLowerCase().includes(quizSearchQuery.toLowerCase()) ||
+                              quiz.subject?.toLowerCase().includes(quizSearchQuery.toLowerCase()) ||
+                              quiz.subtopic?.toLowerCase().includes(quizSearchQuery.toLowerCase())
+                          ).length === 0 && (
+                            <Box px={3} py={4} textAlign="center">
+                              <Text color="gray.500" fontSize="sm">
+                                No quizzes found
+                              </Text>
+                            </Box>
+                          )}
+                        </MenuList>
+                      </Menu>
                     )}
                   </Box>
                   <Box>
@@ -413,13 +549,49 @@ export const QuizRankings: React.FC = () => {
                 <HStack justify="space-between" align="center">
                   <Heading size="md">
                     {selectedQuizId
-                      ? `📊 My Quiz Attempts: ${availableQuizzes.find((q) => q.id === selectedQuizId)?.displayName || 'Selected Quiz'}`
-                      : '📊 My Quiz Attempts'}
+                      ? `📊 Quiz Leaderboard: ${availableQuizzes.find((q) => q.id === selectedQuizId)?.displayName || 'Selected Quiz'}`
+                      : '📊 Quiz Leaderboard'}
                   </Heading>
                   <Badge colorScheme="blue" fontSize="sm" p={2}>
-                    {userRecords.length} Attempt{userRecords.length !== 1 ? 's' : ''}
+                    {analytics.summary.totalParticipants} Participant{analytics.summary.totalParticipants !== 1 ? 's' : ''}
                   </Badge>
                 </HStack>
+                {userRanking && (
+                  <Alert 
+                    status={userRanking.rank <= 3 ? 'success' : 'info'} 
+                    borderRadius="md"
+                  >
+                    <AlertIcon />
+                    <HStack justify="space-between" align="center" width="100%" flexWrap="wrap">
+                      <Text fontSize="sm">
+                        <strong>Your Rank:</strong> #{userRanking.rank} out of {analytics.summary.totalParticipants} participants
+                        {' • '}
+                        <strong>Your Score:</strong> {userRanking.scorePercentage}% ({userRanking.compositeScore.toFixed(1)} composite)
+                      </Text>
+                      {userRanking.rank <= 3 && (
+                        <Button
+                          size="sm"
+                          colorScheme="yellow"
+                          leftIcon={<Text>🏆</Text>}
+                          onClick={() => {
+                            const selectedQuiz = availableQuizzes.find((q) => q.id === selectedQuizId);
+                            generateCertificate({
+                              studentName: currentUser?.name || userRanking.userName || 'Student',
+                              quizName: selectedQuiz?.displayName || `${userRanking.subject} - ${userRanking.subtopic}`,
+                              rank: userRanking.rank,
+                              score: userRanking.scorePercentage,
+                              compositeScore: userRanking.compositeScore,
+                              date: userRanking.timestamp || new Date().toISOString(),
+                              totalParticipants: analytics.summary.totalParticipants,
+                            });
+                          }}
+                        >
+                          Download Certificate
+                        </Button>
+                      )}
+                    </HStack>
+                  </Alert>
+                )}
                 <Text fontSize="sm" color="gray.600">
                   Rankings calculated using: Score (60%) + Questions Correct (20%) + Time
                   Efficiency (20%)
@@ -429,21 +601,24 @@ export const QuizRankings: React.FC = () => {
                     <Thead>
                       <Tr>
                         <Th>Rank</Th>
+                        <Th>Student</Th>
                         <Th>Quiz Name</Th>
                         <Th isNumeric>Score</Th>
                         <Th isNumeric>Correct</Th>
                         <Th isNumeric>Time</Th>
                         <Th isNumeric>Composite</Th>
                         <Th>Date</Th>
+                        <Th>Actions</Th>
                       </Tr>
                     </Thead>
                     <Tbody>
-                      {userRecords.map((participant: any) => {
+                      {allParticipants.map((participant: any) => {
+                        const isCurrentUser = participant.userId === (currentUser as { id: string })?.id;
                         return (
                           <Tr
                             key={participant.attemptId}
-                            bg="blue.50"
-                            fontWeight="bold"
+                            bg={isCurrentUser ? 'blue.50' : 'transparent'}
+                            fontWeight={isCurrentUser ? 'bold' : 'normal'}
                           >
                             <Td>
                               <Badge
@@ -455,7 +630,20 @@ export const QuizRankings: React.FC = () => {
                               </Badge>
                             </Td>
                             <Td>
-                              <Text fontSize="sm" fontWeight="semibold">
+                              <VStack align="start" spacing={0}>
+                                <Text fontWeight={isCurrentUser ? 'bold' : 'semibold'}>
+                                  {isCurrentUser ? '👤 ' : ''}
+                                  {participant.userName || 'Unknown'}
+                                </Text>
+                                {isCurrentUser && (
+                                  <Text fontSize="xs" color="blue.600" fontWeight="bold">
+                                    (You)
+                                  </Text>
+                                )}
+                              </VStack>
+                            </Td>
+                            <Td>
+                              <Text fontSize="sm" fontWeight={isCurrentUser ? 'bold' : 'normal'}>
                                 {participant.subject || 'N/A'} - {participant.subtopic || 'N/A'}
                               </Text>
                             </Td>
@@ -480,6 +668,21 @@ export const QuizRankings: React.FC = () => {
                                   : 'N/A'}
                               </Text>
                             </Td>
+                            <Td>
+                              {isCurrentUser ? (
+                                <Button
+                                  size="sm"
+                                  colorScheme="blue"
+                                  onClick={() => handleViewDetails(participant.attemptId)}
+                                >
+                                  View
+                                </Button>
+                              ) : (
+                                <Text fontSize="xs" color="gray.400">
+                                  -
+                                </Text>
+                              )}
+                            </Td>
                           </Tr>
                         );
                       })}
@@ -490,6 +693,135 @@ export const QuizRankings: React.FC = () => {
             </CardBody>
           </Card>
         </VStack>
+
+        {/* View Details Modal */}
+        <Modal isOpen={isOpen} onClose={onClose} size={{ base: 'full', md: 'xl' }} scrollBehavior="inside">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Quiz Details</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              {selectedQuizDetails && (
+                <VStack spacing={4} align="stretch">
+                  <Box>
+                    <Text fontWeight="bold" mb={2}>
+                      Quiz Information
+                    </Text>
+                    <Text>
+                      <strong>Subject:</strong> {selectedQuizDetails.subject}
+                    </Text>
+                    <Text>
+                      <strong>Subtopic:</strong> {selectedQuizDetails.subtopic}
+                    </Text>
+                    <Text>
+                      <strong>Date:</strong> {formatDate(selectedQuizDetails.timestamp)}
+                    </Text>
+                    <Text>
+                      <strong>Age:</strong> {selectedQuizDetails.age}
+                    </Text>
+                    <Text>
+                      <strong>Language:</strong> {selectedQuizDetails.language}
+                    </Text>
+                  </Box>
+
+                  <Divider />
+
+                  <Box>
+                    <Text fontWeight="bold" mb={2}>
+                      Results
+                    </Text>
+                    <HStack spacing={4}>
+                      <Text>
+                        <strong>Score:</strong>{' '}
+                        <Badge
+                          colorScheme={
+                            selectedQuizDetails.score_percentage >= 80
+                              ? 'green'
+                              : selectedQuizDetails.score_percentage >= 60
+                              ? 'yellow'
+                              : 'red'
+                          }
+                        >
+                          {selectedQuizDetails.score_percentage.toFixed(1)}%
+                        </Badge>
+                      </Text>
+                      <Text>
+                        <strong>Correct:</strong> {selectedQuizDetails.correct_count}
+                      </Text>
+                      <Text>
+                        <strong>Wrong:</strong> {selectedQuizDetails.wrong_count}
+                      </Text>
+                      <Text>
+                        <strong>Time:</strong> {formatTime(selectedQuizDetails.time_taken)}
+                      </Text>
+                    </HStack>
+                  </Box>
+
+                  {selectedQuizDetails.explanation_of_mistakes && (
+                    <>
+                      <Divider />
+                      <Box>
+                        <Text fontWeight="bold" mb={2}>
+                          Explanation of Mistakes
+                        </Text>
+                        <Text whiteSpace="pre-wrap">{selectedQuizDetails.explanation_of_mistakes}</Text>
+                      </Box>
+                    </>
+                  )}
+
+                  {selectedQuizDetails.answers && selectedQuizDetails.answers.length > 0 && (
+                    <>
+                      <Divider />
+                      <Box>
+                        <Text fontWeight="bold" mb={2}>
+                          Answers ({selectedQuizDetails.answers.length} questions)
+                        </Text>
+                        <VStack spacing={3} align="stretch">
+                          {selectedQuizDetails.answers
+                            .sort((a: any, b: any) => a.questionNumber - b.questionNumber)
+                            .map((answer: any, idx: number) => (
+                              <Box
+                                key={idx}
+                                p={3}
+                                border="1px"
+                                borderColor={answer.isCorrect ? 'green.200' : 'red.200'}
+                                borderRadius="md"
+                                bg={answer.isCorrect ? 'green.50' : 'red.50'}
+                              >
+                                <HStack justify="space-between" mb={2}>
+                                  <Text fontWeight="bold">Question {answer.questionNumber}</Text>
+                                  <Badge colorScheme={answer.isCorrect ? 'green' : 'red'}>
+                                    {answer.isCorrect ? 'Correct' : 'Wrong'}
+                                  </Badge>
+                                </HStack>
+                                <Text mb={1}>
+                                  <strong>Q:</strong> {answer.question}
+                                </Text>
+                                <Text mb={1}>
+                                  <strong>Your Answer:</strong> {answer.childAnswer || 'N/A'}
+                                </Text>
+                                <Text mb={1}>
+                                  <strong>Correct Answer:</strong> {answer.correctAnswer}
+                                </Text>
+                                {answer.explanation && (
+                                  <Text fontSize="sm" color="gray.600" mt={1}>
+                                    <strong>Explanation:</strong> {answer.explanation}
+                                  </Text>
+                                )}
+                              </Box>
+                            ))}
+                        </VStack>
+                      </Box>
+                    </>
+                  )}
+                </VStack>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={onClose}>Close</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </Box>
     </PullToRefresh>
   );
