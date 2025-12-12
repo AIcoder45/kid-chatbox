@@ -46,6 +46,7 @@ import {
 import { Subject, Difficulty } from '@/types/quiz';
 import { isValidSubject } from '@/utils/validation';
 import { useState, useCallback, useEffect } from 'react';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 
 interface ConfigurationFormProps {
   onConfigComplete: (config: {
@@ -68,6 +69,7 @@ interface ConfigurationFormProps {
 export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
   onConfigComplete,
 }) => {
+  const { canTakeQuiz, planInfo } = usePlanLimits();
   const [subject, setSubject] = useState<Subject | ''>('');
   const [selectedSubtopics, setSelectedSubtopics] = useState<string[]>([]);
   const [customSubtopic, setCustomSubtopic] = useState<string>('');
@@ -299,6 +301,8 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
       : selectedSubtopics.length > 0 || instructions.trim().length > 0) &&
     isValidQuestionCount &&
     isValidTimeLimit;
+
+  const isFormValidWithLimits = isFormValid && canTakeQuiz;
 
   const subtopics = subject ? getSubtopicsForSubject(subject) : [];
 
@@ -895,29 +899,51 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
             </Box>
           </motion.div>
 
+          {/* Plan Limit Warning */}
+          {!canTakeQuiz && planInfo && (
+            <Box
+              bg="red.50"
+              borderWidth={2}
+              borderColor="red.200"
+              borderRadius="md"
+              p={4}
+              mb={4}
+            >
+              <Text fontSize={{ base: 'xs', sm: 'sm', md: 'md' }} color="red.700" fontWeight="semibold" textAlign="center">
+                🚫 Daily Quiz Limit Reached
+              </Text>
+              <Text fontSize={{ base: '2xs', sm: 'xs', md: 'sm' }} color="red.600" textAlign="center" mt={2}>
+                You have used {planInfo.usage.quizCount} of {planInfo.limits.dailyQuizLimit} quizzes today. Please try again tomorrow or upgrade your plan.
+              </Text>
+            </Box>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.4 }}
-            whileHover={isFormValid ? { scale: 1.02 } : {}}
-            whileTap={isFormValid ? { scale: 0.98 } : {}}
+            whileHover={isFormValidWithLimits ? { scale: 1.02 } : {}}
+            whileTap={isFormValidWithLimits ? { scale: 0.98 } : {}}
           >
             <Button
               colorScheme="blue"
               size="lg"
               onClick={handleSubmit}
-              isDisabled={!isFormValid}
+              isDisabled={!isFormValidWithLimits}
               width="100%"
               borderRadius="xl"
-              boxShadow={isFormValid ? 'lg' : 'none'}
-              _hover={isFormValid ? { boxShadow: 'xl', transform: 'translateY(-2px)' } : {}}
+              boxShadow={isFormValidWithLimits ? 'lg' : 'none'}
+              _hover={isFormValidWithLimits ? { boxShadow: 'xl', transform: 'translateY(-2px)' } : {}}
               _disabled={{ opacity: 0.5, cursor: 'not-allowed' }}
               transition="all 0.3s"
               fontSize="lg"
               fontWeight="bold"
               padding={6}
+              title={!canTakeQuiz ? `Daily quiz limit reached. You have used ${planInfo?.usage.quizCount || 0} of ${planInfo?.limits.dailyQuizLimit || 0} quizzes today.` : ''}
             >
-              {isFormValid ? (
+              {!canTakeQuiz ? (
+                '🚫 Limit Reached'
+              ) : isFormValid ? (
                 <motion.span
                   animate={{ rotate: [0, 10, -10, 0] }}
                   transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}

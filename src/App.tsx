@@ -84,65 +84,87 @@ const theme = extendTheme({
     },
     Heading: {
       baseStyle: {
-        // Responsive font sizes - smaller on mobile
-        fontSize: {
-          base: '1.25rem', // 20px
-          sm: '1.5rem',    // 24px
-          md: '1.875rem',  // 30px
-          lg: '2.25rem',   // 36px
-        },
+        fontWeight: 'bold',
+        lineHeight: 'shorter',
+        letterSpacing: '-0.02em',
       },
       sizes: {
         xs: {
-          fontSize: { base: '0.75rem', md: '0.875rem' }, // 12px/14px
+          fontSize: { base: '0.75rem', sm: '0.8125rem', md: '0.875rem' }, // 12px/13px/14px
+          lineHeight: { base: '1.2', md: '1.3' },
         },
         sm: {
-          fontSize: { base: '0.875rem', md: '1rem' }, // 14px/16px
+          fontSize: { base: '0.875rem', sm: '0.9375rem', md: '1rem' }, // 14px/15px/16px
+          lineHeight: { base: '1.25', md: '1.35' },
         },
         md: {
-          fontSize: { base: '1rem', md: '1.125rem' }, // 16px/18px
+          fontSize: { base: '1rem', sm: '1.0625rem', md: '1.125rem' }, // 16px/17px/18px
+          lineHeight: { base: '1.3', md: '1.4' },
         },
         lg: {
-          fontSize: { base: '1.125rem', md: '1.25rem' }, // 18px/20px
+          fontSize: { base: '1.125rem', sm: '1.25rem', md: '1.375rem' }, // 18px/20px/22px
+          lineHeight: { base: '1.35', md: '1.4' },
         },
         xl: {
-          fontSize: { base: '1.25rem', md: '1.5rem' }, // 20px/24px
+          fontSize: { base: '1.25rem', sm: '1.375rem', md: '1.5rem' }, // 20px/22px/24px
+          lineHeight: { base: '1.4', md: '1.45' },
         },
         '2xl': {
-          fontSize: { base: '1.5rem', md: '1.875rem' }, // 24px/30px
+          fontSize: { base: '1.5rem', sm: '1.625rem', md: '1.875rem' }, // 24px/26px/30px
+          lineHeight: { base: '1.4', md: '1.5' },
         },
         '3xl': {
-          fontSize: { base: '1.875rem', md: '2.25rem' }, // 30px/36px
+          fontSize: { base: '1.875rem', sm: '2rem', md: '2.25rem' }, // 30px/32px/36px
+          lineHeight: { base: '1.4', md: '1.5' },
         },
         '4xl': {
-          fontSize: { base: '2.25rem', md: '3rem' }, // 36px/48px
+          fontSize: { base: '2rem', sm: '2.25rem', md: '2.5rem', lg: '3rem' }, // 32px/36px/40px/48px
+          lineHeight: { base: '1.3', md: '1.4' },
         },
       },
     },
     Text: {
       baseStyle: {
-        fontSize: { base: '0.875rem', md: '1rem' }, // 14px/16px - smaller on mobile
+        fontSize: { base: '0.875rem', sm: '0.9375rem', md: '1rem' }, // 14px/15px/16px - optimized for readability
+        lineHeight: { base: '1.5', md: '1.6' },
       },
       sizes: {
         xs: {
-          fontSize: { base: '0.625rem', md: '0.75rem' }, // 10px/12px
+          fontSize: { base: '0.6875rem', sm: '0.75rem', md: '0.8125rem' }, // 11px/12px/13px
+          lineHeight: { base: '1.4', md: '1.5' },
         },
         sm: {
-          fontSize: { base: '0.75rem', md: '0.875rem' }, // 12px/14px
+          fontSize: { base: '0.75rem', sm: '0.8125rem', md: '0.875rem' }, // 12px/13px/14px
+          lineHeight: { base: '1.45', md: '1.5' },
         },
         md: {
-          fontSize: { base: '0.875rem', md: '1rem' }, // 14px/16px
+          fontSize: { base: '0.875rem', sm: '0.9375rem', md: '1rem' }, // 14px/15px/16px
+          lineHeight: { base: '1.5', md: '1.6' },
         },
         lg: {
-          fontSize: { base: '1rem', md: '1.125rem' }, // 16px/18px
+          fontSize: { base: '1rem', sm: '1.0625rem', md: '1.125rem' }, // 16px/17px/18px
+          lineHeight: { base: '1.5', md: '1.6' },
         },
         xl: {
-          fontSize: { base: '1.125rem', md: '1.25rem' }, // 18px/20px
+          fontSize: { base: '1.125rem', sm: '1.1875rem', md: '1.25rem' }, // 18px/19px/20px
+          lineHeight: { base: '1.5', md: '1.6' },
         },
         '2xl': {
-          fontSize: { base: '1.25rem', md: '1.5rem' }, // 20px/24px
+          fontSize: { base: '1.25rem', sm: '1.375rem', md: '1.5rem' }, // 20px/22px/24px
+          lineHeight: { base: '1.4', md: '1.5' },
         },
       },
+    },
+    Card: {
+      baseStyle: (props: { colorMode: string }) => ({
+        container: {
+          bg: props.colorMode === 'dark' ? 'gray.800' : 'white',
+          color: props.colorMode === 'dark' ? 'whiteAlpha.900' : 'gray.800',
+          borderRadius: 'md',
+          boxShadow: 'sm',
+          overflow: 'hidden',
+        },
+      }),
     },
   },
 });
@@ -438,3 +460,4 @@ export const App: React.FC = () => {
     </ChakraProvider>
   );
 };
+

@@ -44,17 +44,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({
     <Box minHeight="100vh" bg={bgColor}>
       {showHeader && (
         <Box position="sticky" top={0} zIndex={1000}>
-          <Header user={user} />
-          {isMobile && (
-            <Box px={4} py={2} bg={mobileMenuBg} borderBottom="1px" borderColor={mobileMenuBorder}>
-              <IconButton
-                aria-label="Open menu"
-                icon={<Text>☰</Text>}
-                onClick={onOpen}
-                variant="ghost"
-              />
-            </Box>
-          )}
+          <Header user={user} onMenuOpen={onOpen} showMenuButton={isMobile} />
         </Box>
       )}
 

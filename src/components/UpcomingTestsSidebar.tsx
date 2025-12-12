@@ -17,7 +17,31 @@ import {
   Button,
   Spinner,
 } from '@/shared/design-system';
-import { scheduledTestsApi } from '@/services/api';
+import { scheduledTestsApi, planApi } from '@/services/api';
+import { authApi } from '@/services/api';
+
+interface PlanInfo {
+  plan: {
+    id: string;
+    name: string;
+    description: string | null;
+    daily_quiz_limit: number;
+    daily_topic_limit: number;
+    monthly_cost: number;
+    status: string;
+  };
+  usage: {
+    quizCount: number;
+    topicCount: number;
+    date: string;
+  };
+  limits: {
+    dailyQuizLimit: number;
+    dailyTopicLimit: number;
+    remainingQuizzes: number;
+    remainingTopics: number;
+  };
+}
 
 interface ScheduledTest {
   id: string;
@@ -53,13 +77,18 @@ const formatDate = (dateString: string): string => {
   }
 };
 
+interface UpcomingTestsSidebarProps {
+  planInfo?: PlanInfo | null;
+}
+
 /**
  * Upcoming Tests Sidebar component
  */
-export const UpcomingTestsSidebar: React.FC = () => {
+export const UpcomingTestsSidebar: React.FC<UpcomingTestsSidebarProps> = ({ planInfo: propPlanInfo }) => {
   const navigate = useNavigate();
   const [upcomingTests, setUpcomingTests] = useState<ScheduledTest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(propPlanInfo || null);
 
   /**
    * Fetches upcoming scheduled tests for the current student
@@ -119,6 +148,28 @@ export const UpcomingTestsSidebar: React.FC = () => {
     return () => clearInterval(interval);
   }, [loadUpcomingTests]);
 
+  // Load plan info if not provided as prop
+  useEffect(() => {
+    if (!propPlanInfo) {
+      const loadPlanInfo = async () => {
+        try {
+          const { user } = authApi.getCurrentUser();
+          if (user && (user as { id: string }).id) {
+            const data = await planApi.getUserPlan((user as { id: string }).id);
+            setPlanInfo(data);
+          }
+        } catch (error) {
+          console.error('Failed to load plan info:', error);
+        }
+      };
+      loadPlanInfo();
+    } else {
+      setPlanInfo(propPlanInfo);
+    }
+  }, [propPlanInfo]);
+
+  const canTakeQuiz = planInfo ? planInfo.limits.remainingQuizzes > 0 : true;
+
   const handleStartQuiz = (test: ScheduledTest) => {
     navigate(`/quiz?scheduledTestId=${test.id}`);
   };
@@ -127,7 +178,7 @@ export const UpcomingTestsSidebar: React.FC = () => {
     return (
       <Box w="100%" position={{ base: 'relative', lg: 'sticky' }} top={{ lg: '100px' }}>
         <Card>
-          <CardBody p={{ base: 3, md: 4 }}>
+          <CardBody p={{ base: 3, sm: 3.5, md: 4, lg: 5 }}>
             <VStack spacing={4}>
               <Heading size={{ base: 'xs', md: 'sm' }} color="blue.600">
                 📅 Upcoming Tests
@@ -152,7 +203,7 @@ export const UpcomingTestsSidebar: React.FC = () => {
       alignSelf="start"
     >
       <Card borderWidth={2} borderColor="blue.200" bg="blue.50" _dark={{ bg: 'blue.900' }}>
-        <CardBody p={{ base: 3, md: 4 }}>
+        <CardBody p={{ base: 3, sm: 3.5, md: 4, lg: 5 }}>
           <VStack spacing={{ base: 3, md: 4 }} align="stretch">
             <Heading size={{ base: 'xs', md: 'sm' }} color="blue.700" _dark={{ color: 'blue.300' }}>
               📅 Upcoming Tests
@@ -213,6 +264,8 @@ export const UpcomingTestsSidebar: React.FC = () => {
                           variant="solid"
                           w="100%"
                           onClick={() => handleStartQuiz(test)}
+                          isDisabled={!canTakeQuiz}
+                          title={!canTakeQuiz ? `Daily quiz limit reached. You have used ${planInfo?.usage.quizCount || 0} of ${planInfo?.limits.dailyQuizLimit || 0} quizzes today.` : ''}
                         >
                           Start Quiz
                         </Button>

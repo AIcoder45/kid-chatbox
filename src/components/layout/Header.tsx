@@ -24,16 +24,17 @@ import { authApi } from '@/services/api';
 import { User } from '@/types';
 import { useFontSize } from '@/contexts/FontSizeContext';
 import { useQuizTimer } from '@/contexts/QuizTimerContext';
-import { Logo } from '@/components/shared/Logo';
 
 interface HeaderProps {
   user?: User | null;
+  onMenuOpen?: () => void;
+  showMenuButton?: boolean;
 }
 
 /**
  * Header component with navigation and user menu
  */
-export const Header: React.FC<HeaderProps> = ({ user }) => {
+export const Header: React.FC<HeaderProps> = ({ user, onMenuOpen, showMenuButton = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { fontSize, increaseFontSize, decreaseFontSize, resetFontSize } = useFontSize();
@@ -112,18 +113,17 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
         <Box maxWidth="1400px" margin="0 auto">
           <Box paddingY={{ base: 2, md: 3 }} paddingX={{ base: 4, md: 6 }}>
             <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={{ base: 2, md: 4 }}>
-            {/* Left: Logo/Title - Aligned with Dashboard content */}
-            <Box
-              flex={{ base: 1, md: 'none' }}
-              display="flex"
-              justifyContent={{ base: 'center', md: 'flex-start' }}
-            >
-              <Logo
-                showText={true}
-                size="md"
-                onClick={handleGoHome}
+            {/* Left: Menu Button (Mobile) */}
+            {showMenuButton && onMenuOpen && (
+              <IconButton
+                aria-label="Open menu"
+                icon={<Text fontSize={{ base: 'lg', md: 'xl' }}>☰</Text>}
+                onClick={onMenuOpen}
+                variant="ghost"
+                size={{ base: 'sm', md: 'md' }}
+                flexShrink={0}
               />
-            </Box>
+            )}
 
             {/* Quiz Timer in Header (when quiz is active) */}
             {quizTimer?.isQuizActive && location.pathname === '/quiz' && (

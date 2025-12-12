@@ -23,6 +23,7 @@ import {
 import { AnswerResult, QuizConfig } from '@/types/quiz';
 import { MESSAGES } from '@/constants/quiz';
 import { MESSAGES as APP_MESSAGES } from '@/constants/app';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 
 interface ResultsViewProps {
   score: number;
@@ -59,6 +60,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onRetrySameTopic,
   onBackToDashboard,
 }) => {
+  const { canTakeQuiz, planInfo } = usePlanLimits();
   const percentage = Math.round((score / totalQuestions) * 100);
   const PASSING_THRESHOLD = 60;
   const hasPassed = percentage >= PASSING_THRESHOLD;
@@ -519,17 +521,17 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
           </Text>
           <Box display="flex" gap={4} flexWrap="wrap" justifyContent="center" w="100%">
             {[
-              { label: 'Try Same Topic Again', onClick: onRetrySameTopic, colorScheme: 'blue' as const, delay: 1.7 },
-              { label: 'Try Different Topic', onClick: onStartNewQuiz, colorScheme: 'green' as const, delay: 1.8 },
-              { label: 'Back to Dashboard', onClick: onBackToDashboard, colorScheme: 'gray' as const, delay: 1.9 },
+              { label: 'Try Same Topic Again', onClick: onRetrySameTopic, colorScheme: 'blue' as const, delay: 1.7, disabled: !canTakeQuiz },
+              { label: 'Try Different Topic', onClick: onStartNewQuiz, colorScheme: 'green' as const, delay: 1.8, disabled: !canTakeQuiz },
+              { label: 'Back to Dashboard', onClick: onBackToDashboard, colorScheme: 'gray' as const, delay: 1.9, disabled: false },
             ].map((button) => (
               <motion.div
                 key={button.label}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: button.delay }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={!button.disabled ? { scale: 1.05 } : {}}
+                whileTap={!button.disabled ? { scale: 0.95 } : {}}
               >
                 <Button
                   colorScheme={button.colorScheme}
@@ -537,9 +539,11 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   onClick={button.onClick}
                   w={{ base: '100%', sm: 'auto' }}
                   boxShadow="md"
-                  _hover={{ boxShadow: 'lg' }}
+                  _hover={!button.disabled ? { boxShadow: 'lg' } : {}}
+                  isDisabled={button.disabled}
+                  title={button.disabled ? `Daily quiz limit reached. You have used ${planInfo?.usage.quizCount || 0} of ${planInfo?.limits.dailyQuizLimit || 0} quizzes today.` : ''}
                 >
-                  {button.label}
+                  {button.disabled && (button.label.includes('Topic')) ? '🚫 Limit Reached' : button.label}
                 </Button>
               </motion.div>
             ))}

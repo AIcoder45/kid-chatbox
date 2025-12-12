@@ -22,8 +22,10 @@ import {
   Progress,
   Divider,
 } from '@/shared/design-system';
-import { scheduledTestsApi } from '@/services/api';
+import { scheduledTestsApi, planApi } from '@/services/api';
+import { authApi } from '@/services/api';
 import { PullToRefresh } from './PullToRefresh';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 
 interface ScheduledTest {
   id: string;
@@ -68,6 +70,7 @@ export const ScheduledTests: React.FC<ScheduledTestsProps> = ({ maxDisplay, show
   const [scheduledTests, setScheduledTests] = useState<ScheduledTest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { canTakeQuiz, planInfo } = usePlanLimits();
 
   useEffect(() => {
     loadScheduledTests();
@@ -258,6 +261,8 @@ export const ScheduledTests: React.FC<ScheduledTestsProps> = ({ maxDisplay, show
                   type="upcoming"
                   formatDate={formatDate}
                   onStartQuiz={handleStartQuiz}
+                  canTakeQuiz={canTakeQuiz}
+                  planInfo={planInfo}
                 />
               ))}
             </SimpleGrid>
@@ -290,6 +295,8 @@ export const ScheduledTests: React.FC<ScheduledTestsProps> = ({ maxDisplay, show
                   type="live"
                   formatDate={formatDate}
                   onStartQuiz={handleStartQuiz}
+                  canTakeQuiz={canTakeQuiz}
+                  planInfo={planInfo}
                 />
               ))}
             </SimpleGrid>
@@ -350,13 +357,18 @@ interface TestCardProps {
   formatDate: (dateString: string) => string;
   onStartQuiz?: (test: ScheduledTest) => void;
   onViewResults?: (test: ScheduledTest) => void;
+  canTakeQuiz?: boolean;
+  planInfo?: {
+    usage: { quizCount: number };
+    limits: { dailyQuizLimit: number };
+  } | null;
 }
 
 /**
  * Test Card Component
  * Renders a single test card with appropriate styling based on type
  */
-const TestCard: React.FC<TestCardProps> = ({ test, type, formatDate, onStartQuiz, onViewResults }) => {
+const TestCard: React.FC<TestCardProps> = ({ test, type, formatDate, onStartQuiz, onViewResults, canTakeQuiz = true, planInfo }) => {
   const now = new Date();
   const scheduledFor = new Date(test.scheduledFor);
   const visibleFrom = new Date(test.visibleFrom);
@@ -534,16 +546,19 @@ const TestCard: React.FC<TestCardProps> = ({ test, type, formatDate, onStartQuiz
               variant={test.hasActiveAttempt ? 'outline' : 'solid'}
               size="md"
               w="100%"
-              isDisabled={isUpcoming && visibleFrom > now}
+              isDisabled={(isUpcoming && visibleFrom > now) || (!test.hasActiveAttempt && !canTakeQuiz)}
               onClick={() => onStartQuiz && onStartQuiz(test)}
+              title={(!canTakeQuiz && !test.hasActiveAttempt) ? `Daily quiz limit reached. You have used ${planInfo?.usage.quizCount || 0} of ${planInfo?.limits.dailyQuizLimit || 0} quizzes today.` : ''}
             >
               {test.hasActiveAttempt
                 ? '🔄 Resume Quiz'
                 : isUpcoming && visibleFrom > now
                   ? '⏳ Not Available Yet'
-                  : type === 'live'
-                    ? '🚀 Start Quiz'
-                    : '📝 Start Quiz'}
+                  : !canTakeQuiz
+                    ? '🚫 Limit Reached'
+                    : type === 'live'
+                      ? '🚀 Start Quiz'
+                      : '📝 Start Quiz'}
             </Button>
           )}
         </VStack>

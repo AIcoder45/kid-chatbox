@@ -38,7 +38,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
   return (
     <Card width="100%" maxWidth="800px" margin="0 auto">
-      <CardBody p={{ base: 4, md: 6 }}>
+      <CardBody p={{ base: 3, sm: 4, md: 5, lg: 6 }}>
         <VStack spacing={{ base: 4, md: 6 }} align="stretch">
           <Text fontSize={{ base: 'lg', md: 'xl' }} fontWeight="bold" color="blue.600">
             Q{question.number}. {question.question}

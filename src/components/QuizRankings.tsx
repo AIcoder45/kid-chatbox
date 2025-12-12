@@ -573,17 +573,21 @@ export const QuizRankings: React.FC = () => {
                           size="sm"
                           colorScheme="yellow"
                           leftIcon={<Text>🏆</Text>}
-                          onClick={() => {
-                            const selectedQuiz = availableQuizzes.find((q) => q.id === selectedQuizId);
-                            generateCertificate({
-                              studentName: currentUser?.name || userRanking.userName || 'Student',
-                              quizName: selectedQuiz?.displayName || `${userRanking.subject} - ${userRanking.subtopic}`,
-                              rank: userRanking.rank,
-                              score: userRanking.scorePercentage,
-                              compositeScore: userRanking.compositeScore,
-                              date: userRanking.timestamp || new Date().toISOString(),
-                              totalParticipants: analytics.summary.totalParticipants,
-                            });
+                          onClick={async () => {
+                            try {
+                              const selectedQuiz = availableQuizzes.find((q) => q.id === selectedQuizId);
+                              await generateCertificate({
+                                studentName: currentUser?.name || userRanking.userName || 'Student',
+                                quizName: selectedQuiz?.displayName || `${userRanking.subject} - ${userRanking.subtopic}`,
+                                rank: userRanking.rank,
+                                score: userRanking.scorePercentage,
+                                compositeScore: userRanking.compositeScore,
+                                date: userRanking.timestamp || new Date().toISOString(),
+                                totalParticipants: analytics.summary.totalParticipants,
+                              });
+                            } catch (error) {
+                              console.error('Failed to generate certificate:', error);
+                            }
                           }}
                         >
                           Download Certificate
