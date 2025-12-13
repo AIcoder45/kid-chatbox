@@ -9,6 +9,11 @@ export const APP_CONSTANTS = {
   MAX_AGE: 14,
   DEFAULT_QUIZ_QUESTIONS: 15,
   GOOGLE_ANALYTICS_ID: import.meta.env.VITE_GOOGLE_ANALYTICS_ID || '',
+  // Spline 3D Robot Scene URL
+  // You can use a Spline URL (https://prod.spline.design/...) or a local file path (/assets/3d/bot.splinecode)
+  // Set VITE_SPLINE_ROBOT_SCENE in your .env file to enable 3D robot, otherwise emoji robot will be shown
+  // Default: Uses smartguru.ai robot scene (same as their website)
+  SPLINE_ROBOT_SCENE: import.meta.env.VITE_SPLINE_ROBOT_SCENE || 'https://www.smartguru.ai/assets/3d/bot.spline',
 } as const;
 
 export const API_ENDPOINTS = {

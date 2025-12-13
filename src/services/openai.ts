@@ -100,6 +100,23 @@ export async function generateQuizQuestions(
     ? `\nADDITIONAL INSTRUCTIONS FROM USER:\n${config.instructions}\n\nPlease incorporate these specific requirements into the question generation.`
     : '';
 
+  // Build additional context fields
+  const gradeLevelContext = config.gradeLevel
+    ? `- Grade/Class Level: ${config.gradeLevel}\n`
+    : '';
+
+  const sampleQuestionContext = config.sampleQuestion
+    ? `- Sample Question Pattern:\n${config.sampleQuestion}\n\nUse this as a reference for the style and format of questions to generate. Follow similar patterns, complexity, and structure.\n`
+    : '';
+
+  const examStyleContext = config.examStyle
+    ? `- Exam Style: ${config.examStyle}\n\nGenerate questions that align with ${config.examStyle} exam standards and patterns. For CBSE, follow CBSE curriculum and question formats. For NCERT, align with NCERT textbook style. For Olympiad, include more challenging and analytical questions. For competitive exams, focus on application-based and reasoning questions.\n`
+    : '';
+
+  // Add timestamp for context
+  const currentTimestamp = new Date().toISOString();
+  const timestampContext = `- Generation Date/Time: ${currentTimestamp}\n\nUse current date context when generating questions, especially for subjects like Current Affairs or recent events.\n`;
+
   const prompt = `You are a friendly AI quiz tutor for kids aged ${config.age} years old.
 
 Generate exactly ${config.questionCount} multiple-choice questions for:
@@ -107,12 +124,14 @@ Generate exactly ${config.questionCount} multiple-choice questions for:
 - Subtopic(s): ${subtopicsText}
 - Language: ${config.language}
 - Difficulty Level: ${config.difficulty} (${difficultyLevel} - appropriate for age ${config.age})
-
+${gradeLevelContext}${examStyleContext}${timestampContext}
 ${languageInstruction}
 
 ${subjectSpecificGuidance}
 
 ${customInstructions}
+
+${sampleQuestionContext}
 
 Requirements:
 1. Each question must have exactly 4 options (A, B, C, D)

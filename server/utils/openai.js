@@ -19,6 +19,9 @@ const openai = new OpenAI({
  * @param {string} config.language - Language preference
  * @param {string} config.subtopicId - Subtopic ID for context
  * @param {string} config.description - Quiz description/context for better question generation
+ * @param {string} config.gradeLevel - Optional grade/class level
+ * @param {string} config.sampleQuestion - Optional sample question pattern
+ * @param {string} config.examStyle - Optional exam style (CBSE, NCERT, Olympiad, competitive)
  * @returns {Promise<Array>} Array of generated questions
  */
 async function generateQuizQuestions(config) {
@@ -30,6 +33,9 @@ async function generateQuizQuestions(config) {
     language = 'English',
     subtopicId,
     description,
+    gradeLevel,
+    sampleQuestion,
+    examStyle,
   } = config;
 
   if (!openai.apiKey) {
@@ -90,13 +96,31 @@ async function generateQuizQuestions(config) {
     ? `\nQuiz Context/Description: ${finalDescription}\nUse this description to understand the quiz's purpose and generate questions that align with this context.`
     : '';
 
+  // Build additional context fields
+  const gradeLevelContext = gradeLevel
+    ? `Grade/Class Level: ${gradeLevel}\n`
+    : '';
+
+  const sampleQuestionContext = sampleQuestion
+    ? `\nSample Question Pattern:\n${sampleQuestion}\n\nUse this as a reference for the style and format of questions to generate. Follow similar patterns, complexity, and structure.\n`
+    : '';
+
+  const examStyleContext = examStyle
+    ? `Exam Style: ${examStyle}\n\nGenerate questions that align with ${examStyle} exam standards and patterns. For CBSE, follow CBSE curriculum and question formats. For NCERT, align with NCERT textbook style. For Olympiad, include more challenging and analytical questions. For competitive exams, focus on application-based and reasoning questions.\n`
+    : '';
+
+  // Add timestamp for context
+  const currentTimestamp = new Date().toISOString();
+  const timestampContext = `Generation Date/Time: ${currentTimestamp}\n\nUse current date context when generating questions, especially for subjects like Current Affairs or recent events.\n`;
+
   const prompt = `Generate ${numberOfQuestions} educational quiz questions for children aged ${ageGroup} years.
 
 Topics: ${topicsText}${descriptionContext}
 Difficulty: ${difficultyLevel}
 Language: ${languageInstruction}
 Question Style: ${questionLength}
-
+${gradeLevelContext}${examStyleContext}${timestampContext}
+${sampleQuestionContext}
 Requirements:
 - Each question must have exactly 4 options (A, B, C, D)
 - Questions should be age-appropriate and educational

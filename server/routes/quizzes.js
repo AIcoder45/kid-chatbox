@@ -821,6 +821,9 @@ router.post('/generate', checkPermission('manage_quizzes'), async (req, res, nex
       timeLimit,
       topics,
       language,
+      gradeLevel,
+      sampleQuestion,
+      examStyle,
     } = req.body;
 
     if (!name || !ageGroup || !difficulty || !numberOfQuestions) {
@@ -839,6 +842,9 @@ router.post('/generate', checkPermission('manage_quizzes'), async (req, res, nex
       language: language || 'English',
       subtopicId,
       description: description || undefined,
+      gradeLevel: gradeLevel || undefined,
+      sampleQuestion: sampleQuestion || undefined,
+      examStyle: examStyle || undefined,
     });
 
     // Create quiz
