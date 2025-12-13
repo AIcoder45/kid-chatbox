@@ -5,9 +5,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminApi, scheduledTestsApi, ScheduledTest } from '@/services/admin';
 import { planApi } from '@/services/api';
-import { Topic, Subtopic, Quiz, QuizQuestion } from '@/services/admin';
-import { parseQuestions, mapQuizData } from './quizUtils';
-import { handleFileUpload, MAX_LINES } from './csvParsing';
+import { Topic, Subtopic, Quiz } from '@/services/admin';
+import { mapQuizData } from './quizUtils';
 
 export const useQuizManagement = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);

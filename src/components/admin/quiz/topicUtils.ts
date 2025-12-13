@@ -4,7 +4,7 @@
 
 import { adminApi } from '@/services/admin';
 import { Topic } from '@/services/admin';
-import { UseToastReturn } from '@/shared/design-system';
+import { useToast } from '@/shared/design-system';
 
 interface EnsureTopicSubtopicParams {
   useManualInput: boolean;
@@ -16,7 +16,7 @@ interface EnsureTopicSubtopicParams {
   ageGroup: string;
   difficulty: string;
   loadTopics: () => Promise<void>;
-  toast: UseToastReturn;
+  toast: ReturnType<typeof useToast>;
 }
 
 /**
@@ -27,7 +27,6 @@ export const ensureTopicAndSubtopic = async ({
   useManualInput,
   manualTopicName,
   manualSubtopicName,
-  selectedTopic,
   selectedSubtopic,
   topics,
   ageGroup,
@@ -61,8 +60,9 @@ export const ensureTopicAndSubtopic = async ({
         description: '',
         ageGroup: ageGroup || '6-8',
         difficultyLevel: difficulty || 'Basic',
-        category: null,
-        thumbnailUrl: null,
+        category: undefined,
+        thumbnailUrl: undefined,
+        isActive: true,
       });
       topicId = topicData.topic.id;
       // Reload topics to include the new one
@@ -85,10 +85,10 @@ export const ensureTopicAndSubtopic = async ({
           title: manualSubtopicName.trim(),
           description: '',
           difficultyLevel: difficulty || 'Basic',
-          illustrationUrl: null,
-          videoUrl: null,
-          voiceNarrationUrl: null,
-          aiStory: null,
+          illustrationUrl: undefined,
+          videoUrl: undefined,
+          voiceNarrationUrl: undefined,
+          aiStory: undefined,
           orderIndex: 0,
           isActive: true,
         });

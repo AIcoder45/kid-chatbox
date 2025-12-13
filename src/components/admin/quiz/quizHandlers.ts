@@ -8,11 +8,11 @@ import { Quiz, QuizQuestion } from '@/services/admin';
 import { parseQuestions, mapQuizData } from './quizUtils';
 import { handleFileUpload, MAX_LINES } from './csvParsing';
 import { ensureTopicAndSubtopic } from './topicUtils';
-import { UseToastReturn } from '@/shared/design-system';
+import { useToast } from '@/shared/design-system';
 import { Topic } from '@/services/admin';
 
 interface HandlersDependencies {
-  toast: UseToastReturn;
+  toast: ReturnType<typeof useToast>;
   setLoading: (loading: boolean) => void;
   loadQuizzes: () => Promise<void>;
   loadTopics: () => Promise<void>;
