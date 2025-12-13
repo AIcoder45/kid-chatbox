@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   VStack,
@@ -29,6 +30,7 @@ const MotionCard = motion(Card);
  * Admin Dashboard component
  */
 export const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,44 +79,55 @@ export const AdminDashboard: React.FC = () => {
       value: summary?.totalUsers || 0,
       color: 'blue',
       icon: '👥',
+      route: '/admin/users',
     },
     {
       label: 'Active Users',
       value: summary?.activeUsers || 0,
       color: 'green',
       icon: '✅',
+      route: '/admin/users?status=approved',
     },
     {
       label: 'Pending Approval',
       value: summary?.pendingUsers || 0,
       color: 'orange',
       icon: '⏳',
+      route: '/admin/users?status=pending',
     },
     {
       label: 'Total Topics',
       value: summary?.totalTopics || 0,
       color: 'purple',
       icon: '📚',
+      route: '/admin/topics',
     },
     {
       label: 'Total Quizzes',
       value: summary?.totalQuizzes || 0,
       color: 'teal',
       icon: '📝',
+      route: '/admin/quizzes',
     },
     {
       label: 'Quiz Attempts',
       value: summary?.totalAttempts || 0,
       color: 'cyan',
       icon: '🎯',
+      route: '/admin/quiz-history',
     },
     {
       label: 'Avg Score',
       value: `${summary?.avgScore.toFixed(1) || 0}%`,
       color: 'pink',
       icon: '⭐',
+      route: '/admin/analytics',
     },
   ];
+
+  const handleCardClick = (route: string) => {
+    navigate(route);
+  };
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
@@ -132,6 +145,9 @@ export const AdminDashboard: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: 1.05 }}
+              cursor="pointer"
+              onClick={() => handleCardClick(stat.route)}
+              _hover={{ shadow: 'lg' }}
             >
               <CardBody p={{ base: 4, md: 6 }}>
                 <HStack justify="space-between" align="center">
@@ -155,6 +171,9 @@ export const AdminDashboard: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
+            cursor="pointer"
+            onClick={() => handleCardClick('/admin/users?status=pending')}
+            _hover={{ shadow: 'lg' }}
           >
             <CardHeader>
               <HStack>

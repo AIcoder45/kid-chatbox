@@ -41,6 +41,11 @@ import {
   Text,
   useToast,
   Switch,
+  useBreakpointValue,
+  Card,
+  CardBody,
+  SimpleGrid,
+  Divider,
 } from '@/shared/design-system';
 import { adminApi, User, Role } from '@/services/admin';
 import { apiClient } from '@/services/api';
@@ -105,6 +110,7 @@ export const UserManagement: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const toast = useToast();
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
   useEffect(() => {
     loadUsers();
@@ -659,114 +665,234 @@ export const UserManagement: React.FC = () => {
           </Select>
         </HStack>
 
-        <Box overflowX="auto">
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>
-                  <Checkbox
-                    isChecked={selectedUserIds.size === users.length && users.length > 0}
-                    isIndeterminate={selectedUserIds.size > 0 && selectedUserIds.size < users.length}
-                    onChange={handleSelectAll}
-                  />
-                </Th>
-                <Th>Name</Th>
-                <Th>Email</Th>
-                <Th>Status</Th>
-                <Th>Enabled</Th>
-                <Th>Roles</Th>
-                <Th>Plan</Th>
-                <Th>Created</Th>
-                <Th>Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {users.map((user) => {
-                const isEnabled = user.status === 'approved';
-                return (
-                <Tr key={user.id}>
-                  <Td>
+        {/* Desktop Table View */}
+        {!isMobile && (
+          <Box overflowX="auto">
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>
                     <Checkbox
-                      isChecked={selectedUserIds.has(user.id)}
-                      onChange={() => handleSelectUser(user.id)}
+                      isChecked={selectedUserIds.size === users.length && users.length > 0}
+                      isIndeterminate={selectedUserIds.size > 0 && selectedUserIds.size < users.length}
+                      onChange={handleSelectAll}
                     />
-                  </Td>
-                  <Td>{user.name}</Td>
-                  <Td>{user.email}</Td>
-                  <Td>
-                    <Badge colorScheme={getStatusColor(user.status)}>{user.status}</Badge>
-                  </Td>
-                  <Td>
-                    <Switch
-                      isChecked={isEnabled}
-                      onChange={(e) => handleToggleUserStatus(user, e.target.checked)}
-                      colorScheme="green"
-                      size="md"
-                    />
-                  </Td>
-                  <Td>
-                    {user.roles?.map((r) => (
-                      <Badge key={r.name} mr={1} colorScheme="blue">
-                        {r.name}
-                      </Badge>
-                    ))}
-                  </Td>
-                  <Td>
-                    <Select
-                      value={userPlans[user.id] || ''}
-                      onChange={(e) => handleInlinePlanAssign(user.id, e.target.value)}
-                      size="sm"
-                      placeholder="Select plan"
-                      isDisabled={assigningPlan === user.id}
-                      minW="150px"
-                    >
-                      {plans.map((plan) => (
-                        <option key={plan.id} value={plan.id}>
-                          {plan.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </Td>
-                  <Td>{new Date(user.createdAt).toLocaleDateString()}</Td>
-                  <Td>
-                    <Menu>
-                      <MenuButton as={Button} size="sm" variant="ghost">
-                        Actions
-                      </MenuButton>
-                      <MenuList>
-                        <MenuItem onClick={() => handleOpenEdit(user)}>Edit User</MenuItem>
-                        {user.status === 'pending' && (
-                          <>
-                            <MenuItem onClick={() => handleApprove(user.id, 'approved')}>
-                              Approve
-                            </MenuItem>
-                            <MenuItem onClick={() => handleApprove(user.id, 'rejected')}>
-                              Reject
-                            </MenuItem>
-                          </>
-                        )}
-                        <MenuItem onClick={() => openRoleModal(user)}>Assign Roles</MenuItem>
-                        {user.status === 'suspended' && (
-                          <MenuItem onClick={() => handleToggleUserStatus(user, true)}>
-                            Enable User
-                          </MenuItem>
-                        )}
-                        {user.status === 'approved' && (
-                          <MenuItem onClick={() => handleToggleUserStatus(user, false)}>
-                            Disable User
-                          </MenuItem>
-                        )}
-                        <MenuItem onClick={() => handleOpenDelete(user)} color="red.500">
-                          Delete User
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
-                  </Td>
+                  </Th>
+                  <Th>Name</Th>
+                  <Th>Email</Th>
+                  <Th>Status</Th>
+                  <Th>Enabled</Th>
+                  <Th>Roles</Th>
+                  <Th>Plan</Th>
+                  <Th>Created</Th>
+                  <Th>Actions</Th>
                 </Tr>
-              )})}
-            </Tbody>
-          </Table>
-        </Box>
+              </Thead>
+              <Tbody>
+                {users.map((user) => {
+                  const isEnabled = user.status === 'approved';
+                  return (
+                    <Tr key={user.id}>
+                      <Td>
+                        <Checkbox
+                          isChecked={selectedUserIds.has(user.id)}
+                          onChange={() => handleSelectUser(user.id)}
+                        />
+                      </Td>
+                      <Td>{user.name}</Td>
+                      <Td>{user.email}</Td>
+                      <Td>
+                        <Badge colorScheme={getStatusColor(user.status)}>{user.status}</Badge>
+                      </Td>
+                      <Td>
+                        <Switch
+                          isChecked={isEnabled}
+                          onChange={(e) => handleToggleUserStatus(user, e.target.checked)}
+                          colorScheme="green"
+                          size="md"
+                        />
+                      </Td>
+                      <Td>
+                        {user.roles?.map((r) => (
+                          <Badge key={r.name} mr={1} colorScheme="blue">
+                            {r.name}
+                          </Badge>
+                        ))}
+                      </Td>
+                      <Td>
+                        <Select
+                          value={userPlans[user.id] || ''}
+                          onChange={(e) => handleInlinePlanAssign(user.id, e.target.value)}
+                          size="sm"
+                          placeholder="Select plan"
+                          isDisabled={assigningPlan === user.id}
+                          minW="150px"
+                        >
+                          {plans.map((plan) => (
+                            <option key={plan.id} value={plan.id}>
+                              {plan.name}
+                            </option>
+                          ))}
+                        </Select>
+                      </Td>
+                      <Td>{new Date(user.createdAt).toLocaleDateString()}</Td>
+                      <Td>
+                        <Menu>
+                          <MenuButton as={Button} size="sm" variant="ghost">
+                            Actions
+                          </MenuButton>
+                          <MenuList>
+                            <MenuItem onClick={() => handleOpenEdit(user)}>Edit User</MenuItem>
+                            {user.status === 'pending' && (
+                              <>
+                                <MenuItem onClick={() => handleApprove(user.id, 'approved')}>
+                                  Approve
+                                </MenuItem>
+                                <MenuItem onClick={() => handleApprove(user.id, 'rejected')}>
+                                  Reject
+                                </MenuItem>
+                              </>
+                            )}
+                            <MenuItem onClick={() => openRoleModal(user)}>Assign Roles</MenuItem>
+                            {user.status === 'suspended' && (
+                              <MenuItem onClick={() => handleToggleUserStatus(user, true)}>
+                                Enable User
+                              </MenuItem>
+                            )}
+                            {user.status === 'approved' && (
+                              <MenuItem onClick={() => handleToggleUserStatus(user, false)}>
+                                Disable User
+                              </MenuItem>
+                            )}
+                            <MenuItem onClick={() => handleOpenDelete(user)} color="red.500">
+                              Delete User
+                            </MenuItem>
+                          </MenuList>
+                        </Menu>
+                      </Td>
+                    </Tr>
+                  );
+                })}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
+
+        {/* Mobile Card View */}
+        {isMobile && (
+          <VStack spacing={4} align="stretch">
+            {users.length === 0 && !loading && (
+              <Text textAlign="center" color="gray.500" py={8}>
+                No users found
+              </Text>
+            )}
+            {users.map((user) => {
+              const isEnabled = user.status === 'approved';
+              return (
+                <Card key={user.id}>
+                  <CardBody>
+                    <VStack align="stretch" spacing={3}>
+                      <HStack justify="space-between">
+                        <Checkbox
+                          isChecked={selectedUserIds.has(user.id)}
+                          onChange={() => handleSelectUser(user.id)}
+                        />
+                        <Menu>
+                          <MenuButton as={Button} size="sm" variant="ghost">
+                            ⋮
+                          </MenuButton>
+                          <MenuList>
+                            <MenuItem onClick={() => handleOpenEdit(user)}>Edit User</MenuItem>
+                            {user.status === 'pending' && (
+                              <>
+                                <MenuItem onClick={() => handleApprove(user.id, 'approved')}>
+                                  Approve
+                                </MenuItem>
+                                <MenuItem onClick={() => handleApprove(user.id, 'rejected')}>
+                                  Reject
+                                </MenuItem>
+                              </>
+                            )}
+                            <MenuItem onClick={() => openRoleModal(user)}>Assign Roles</MenuItem>
+                            {user.status === 'suspended' && (
+                              <MenuItem onClick={() => handleToggleUserStatus(user, true)}>
+                                Enable User
+                              </MenuItem>
+                            )}
+                            {user.status === 'approved' && (
+                              <MenuItem onClick={() => handleToggleUserStatus(user, false)}>
+                                Disable User
+                              </MenuItem>
+                            )}
+                            <MenuItem onClick={() => handleOpenDelete(user)} color="red.500">
+                              Delete User
+                            </MenuItem>
+                          </MenuList>
+                        </Menu>
+                      </HStack>
+                      <Divider />
+                      <VStack align="stretch" spacing={2}>
+                        <HStack justify="space-between">
+                          <Text fontWeight="bold" fontSize="md">
+                            {user.name}
+                          </Text>
+                          <Badge colorScheme={getStatusColor(user.status)}>{user.status}</Badge>
+                        </HStack>
+                        <Text fontSize="sm" color="gray.600">
+                          {user.email}
+                        </Text>
+                        <HStack justify="space-between" flexWrap="wrap">
+                          <Text fontSize="sm" color="gray.600">
+                            Created: {new Date(user.createdAt).toLocaleDateString()}
+                          </Text>
+                          <HStack>
+                            <Text fontSize="sm" color="gray.600">
+                              Enabled:
+                            </Text>
+                            <Switch
+                              isChecked={isEnabled}
+                              onChange={(e) => handleToggleUserStatus(user, e.target.checked)}
+                              colorScheme="green"
+                              size="sm"
+                            />
+                          </HStack>
+                        </HStack>
+                        {user.roles && user.roles.length > 0 && (
+                          <HStack flexWrap="wrap" spacing={1}>
+                            <Text fontSize="sm" color="gray.600" mr={2}>
+                              Roles:
+                            </Text>
+                            {user.roles.map((r) => (
+                              <Badge key={r.name} colorScheme="blue" fontSize="xs">
+                                {r.name}
+                              </Badge>
+                            ))}
+                          </HStack>
+                        )}
+                        <FormControl>
+                          <FormLabel fontSize="sm">Plan</FormLabel>
+                          <Select
+                            value={userPlans[user.id] || ''}
+                            onChange={(e) => handleInlinePlanAssign(user.id, e.target.value)}
+                            size="sm"
+                            placeholder="Select plan"
+                            isDisabled={assigningPlan === user.id}
+                          >
+                            {plans.map((plan) => (
+                              <option key={plan.id} value={plan.id}>
+                                {plan.name}
+                              </option>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </VStack>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              );
+            })}
+          </VStack>
+        )}
 
         <Modal isOpen={isOpen} onClose={onClose} size={{ base: 'full', md: 'md' }}>
           <ModalOverlay />
