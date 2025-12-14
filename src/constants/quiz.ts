@@ -21,7 +21,6 @@ export const DIFFICULTY_LEVELS = {
 export const LANGUAGES = {
   HINDI: 'Hindi',
   ENGLISH: 'English',
-  HINGLISH: 'Hinglish',
 } as const;
 
 export const SUBJECTS = {

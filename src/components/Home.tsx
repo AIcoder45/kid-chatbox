@@ -238,7 +238,7 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
           <HeroSection />
 
           {/* Buttons positioned below the circle */}
-          <Box mt={{ base: 6, md: '250px' }} position="relative" zIndex={2}>
+          <Box mt={{ base: 6, md: '460px' }} position="relative" zIndex={2}>
             <HeroButtons onGetStarted={handleGetStarted} onLogin={handleLogin} />
           </Box>
 

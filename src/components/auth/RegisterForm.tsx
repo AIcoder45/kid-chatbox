@@ -17,7 +17,7 @@ import {
 } from '@/shared/design-system';
 import { authApi, getErrorMessage } from '@/services/api';
 import { RegisterData } from '@/types';
-import { LANGUAGES, QUIZ_CONSTANTS } from '@/constants/quiz';
+import { LANGUAGES } from '@/constants/quiz';
 import { Language } from '@/types/quiz';
 import { REGISTER_CONSTANTS, GRADES } from '@/constants/auth';
 
@@ -144,10 +144,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   age: e.target.value ? parseInt(e.target.value, 10) : undefined,
                 })
               }
-              placeholder={`Age (${QUIZ_CONSTANTS.MIN_AGE}-${QUIZ_CONSTANTS.MAX_AGE})`}
+              placeholder="Age (1-100)"
               size="lg"
-              min={QUIZ_CONSTANTS.MIN_AGE}
-              max={QUIZ_CONSTANTS.MAX_AGE}
+              min={1}
+              max={100}
               borderRadius="lg"
               bg="rgba(255, 255, 255, 0.05)"
               borderColor="rgba(255, 255, 255, 0.1)"
