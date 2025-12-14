@@ -229,7 +229,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <Box as="form" width="100%" onSubmit={handleEmailLogin}>
         <VStack spacing={4}>
           <Box width="100%">
-            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="gray.700">
+            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="rgba(255, 255, 255, 0.8)">
               {LOGIN_CONSTANTS.EMAIL_LABEL}
             </Text>
             <Input
@@ -241,14 +241,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               required
               autoComplete="email"
               borderRadius="lg"
-              borderColor="gray.300"
-              _hover={{ borderColor: 'blue.400' }}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
+              bg="rgba(255, 255, 255, 0.05)"
+              borderColor="rgba(255, 255, 255, 0.1)"
+              color="white"
+              _placeholder={{ color: 'rgba(255, 255, 255, 0.5)' }}
+              _hover={{ borderColor: 'rgba(0, 242, 255, 0.5)' }}
+              _focus={{ borderColor: '#00f2ff', boxShadow: '0 0 0 1px rgba(0, 242, 255, 0.3)' }}
             />
           </Box>
 
           <Box width="100%">
-            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="gray.700">
+            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="rgba(255, 255, 255, 0.8)">
               {LOGIN_CONSTANTS.PASSWORD_LABEL}
             </Text>
             <Input
@@ -260,15 +263,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               required
               autoComplete="current-password"
               borderRadius="lg"
-              borderColor="gray.300"
-              _hover={{ borderColor: 'blue.400' }}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
+              bg="rgba(255, 255, 255, 0.05)"
+              borderColor="rgba(255, 255, 255, 0.1)"
+              color="white"
+              _placeholder={{ color: 'rgba(255, 255, 255, 0.5)' }}
+              _hover={{ borderColor: 'rgba(0, 242, 255, 0.5)' }}
+              _focus={{ borderColor: '#00f2ff', boxShadow: '0 0 0 1px rgba(0, 242, 255, 0.3)' }}
             />
           </Box>
 
           <Button
             type="submit"
-            colorScheme="purple"
+            bg="#00f2ff"
+            color="black"
             size="lg"
             width="100%"
             isLoading={loading}
@@ -276,7 +283,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             borderRadius="lg"
             fontWeight="bold"
             fontSize="md"
-            _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+            _hover={{ bg: '#00d9e6', transform: 'translateY(-2px)', boxShadow: '0 8px 20px rgba(0, 242, 255, 0.3)' }}
+            _disabled={{ opacity: 0.5, cursor: 'not-allowed' }}
             transition="all 0.2s"
           >
             {LOGIN_CONSTANTS.LOGIN_BUTTON}
@@ -287,16 +295,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       {googleClientId && (
         <>
           <HStack width="100%" spacing={4}>
-            <Divider />
-            <Text fontSize="sm" color="gray.500" whiteSpace="nowrap">
+            <Divider borderColor="rgba(255, 255, 255, 0.1)" />
+            <Text fontSize="sm" color="rgba(255, 255, 255, 0.5)" whiteSpace="nowrap">
               {LOGIN_CONSTANTS.OR_DIVIDER}
             </Text>
-            <Divider />
+            <Divider borderColor="rgba(255, 255, 255, 0.1)" />
           </HStack>
 
           <Button
-            colorScheme="red"
             variant="outline"
+            borderColor="rgba(255, 255, 255, 0.2)"
+            color="white"
             size="lg"
             width="100%"
             onClick={handleGoogleButtonClick}
@@ -304,7 +313,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             isLoading={googleLoading}
             borderRadius="lg"
             fontWeight="semibold"
-            _hover={{ transform: 'translateY(-2px)', boxShadow: 'md' }}
+            bg="rgba(255, 255, 255, 0.05)"
+            _hover={{
+              bg: 'rgba(255, 255, 255, 0.1)',
+              borderColor: 'rgba(0, 242, 255, 0.5)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(0, 242, 255, 0.2)',
+            }}
+            _disabled={{ opacity: 0.5, cursor: 'not-allowed' }}
             transition="all 0.2s"
           >
             {googleReady ? LOGIN_CONSTANTS.GOOGLE_BUTTON : LOGIN_CONSTANTS.GOOGLE_LOADING}
@@ -313,15 +329,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       )}
 
       <HStack spacing={2} justifyContent="center" pt={2}>
-        <Text fontSize="sm" color="gray.600">
+        <Text fontSize="sm" color="rgba(255, 255, 255, 0.6)">
           {LOGIN_CONSTANTS.NO_ACCOUNT_TEXT}
         </Text>
         <Button
           variant="link"
-          colorScheme="purple"
+          color="#00f2ff"
           size="sm"
           onClick={onSwitchToRegister}
           fontWeight="semibold"
+          _hover={{ color: '#00d9e6', textDecoration: 'underline' }}
         >
           {LOGIN_CONSTANTS.SIGN_UP_LINK}
         </Button>

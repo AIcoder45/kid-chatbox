@@ -227,7 +227,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         >
           <Certificate
             studentName={studentName}
-            quizName={config?.topicName || config?.subtopicName || 'Quiz'}
+            quizName={config?.subtopics?.length > 0 ? `${config.subject} - ${config.subtopics.join(', ')}` : config?.subject || 'Quiz'}
             score={score}
             totalQuestions={totalQuestions}
             percentage={percentage}
@@ -236,7 +236,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               try {
                 await generateCertificate({
                   studentName,
-                  quizName: config?.topicName || config?.subtopicName || 'Quiz',
+                  quizName: config?.subtopics?.length > 0 ? `${config.subject} - ${config.subtopics.join(', ')}` : config?.subject || 'Quiz',
                   rank: 1, // Default rank, can be updated if ranking system exists
                   score: percentage,
                   compositeScore: percentage,

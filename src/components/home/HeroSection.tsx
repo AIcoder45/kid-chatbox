@@ -11,10 +11,7 @@ interface HeroSectionProps {
   onLogin: () => void;
 }
 
-export const HeroSection: React.FC<HeroSectionProps> = ({
-  onGetStarted,
-  onLogin,
-}) => {
+export const HeroSection: React.FC = () => {
   return (
     <motion.div
       initial={{ opacity: 0, y: -50 }}
@@ -63,8 +60,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           Level up your study game with personalized quizzes, smart tutoring, and epic learning
           adventures! No cap, this is the future of education 🎓
         </Text>
+      </VStack>
+    </motion.div>
+  );
+};
 
-        <HStack spacing={{ base: 2, md: 4 }} pt={4} flexWrap="wrap" justifyContent="center">
+export const HeroButtons: React.FC<HeroSectionProps> = ({
+  onGetStarted,
+  onLogin,
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 0.4 }}
+    >
+      <HStack spacing={{ base: 2, md: 4 }} flexWrap="wrap" justifyContent="center">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               size={{ base: 'md', md: 'lg' }}
@@ -111,8 +122,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </Button>
           </motion.div>
         </HStack>
-      </VStack>
-    </motion.div>
-  );
-};
+      </motion.div>
+    );
+  };
 

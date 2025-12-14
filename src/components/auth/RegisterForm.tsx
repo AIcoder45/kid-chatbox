@@ -67,7 +67,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       <Box as="form" width="100%" onSubmit={handleSubmit}>
         <VStack spacing={4}>
           <Box width="100%">
-            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="gray.700">
+            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="rgba(255, 255, 255, 0.8)">
               {REGISTER_CONSTANTS.NAME_LABEL} *
             </Text>
             <Input
@@ -77,14 +77,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               size="lg"
               required
               borderRadius="lg"
-              borderColor="gray.300"
-              _hover={{ borderColor: 'blue.400' }}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
+              bg="rgba(255, 255, 255, 0.05)"
+              borderColor="rgba(255, 255, 255, 0.1)"
+              color="white"
+              _placeholder={{ color: 'rgba(255, 255, 255, 0.5)' }}
+              _hover={{ borderColor: 'rgba(0, 242, 255, 0.5)' }}
+              _focus={{ borderColor: '#00f2ff', boxShadow: '0 0 0 1px rgba(0, 242, 255, 0.3)' }}
             />
           </Box>
 
           <Box width="100%">
-            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="gray.700">
+            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="rgba(255, 255, 255, 0.8)">
               {REGISTER_CONSTANTS.EMAIL_LABEL} *
             </Text>
             <Input
@@ -96,14 +99,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               required
               autoComplete="email"
               borderRadius="lg"
-              borderColor="gray.300"
-              _hover={{ borderColor: 'blue.400' }}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
+              bg="rgba(255, 255, 255, 0.05)"
+              borderColor="rgba(255, 255, 255, 0.1)"
+              color="white"
+              _placeholder={{ color: 'rgba(255, 255, 255, 0.5)' }}
+              _hover={{ borderColor: 'rgba(0, 242, 255, 0.5)' }}
+              _focus={{ borderColor: '#00f2ff', boxShadow: '0 0 0 1px rgba(0, 242, 255, 0.3)' }}
             />
           </Box>
 
           <Box width="100%">
-            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="gray.700">
+            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="rgba(255, 255, 255, 0.8)">
               {REGISTER_CONSTANTS.PASSWORD_LABEL} *
             </Text>
             <Input
@@ -116,14 +122,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               minLength={6}
               autoComplete="new-password"
               borderRadius="lg"
-              borderColor="gray.300"
-              _hover={{ borderColor: 'blue.400' }}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
+              bg="rgba(255, 255, 255, 0.05)"
+              borderColor="rgba(255, 255, 255, 0.1)"
+              color="white"
+              _placeholder={{ color: 'rgba(255, 255, 255, 0.5)' }}
+              _hover={{ borderColor: 'rgba(0, 242, 255, 0.5)' }}
+              _focus={{ borderColor: '#00f2ff', boxShadow: '0 0 0 1px rgba(0, 242, 255, 0.3)' }}
             />
           </Box>
 
           <Box width="100%">
-            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="gray.700">
+            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="rgba(255, 255, 255, 0.8)">
               Age (optional)
             </Text>
             <Input
@@ -140,14 +149,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               min={QUIZ_CONSTANTS.MIN_AGE}
               max={QUIZ_CONSTANTS.MAX_AGE}
               borderRadius="lg"
-              borderColor="gray.300"
-              _hover={{ borderColor: 'blue.400' }}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
+              bg="rgba(255, 255, 255, 0.05)"
+              borderColor="rgba(255, 255, 255, 0.1)"
+              color="white"
+              _placeholder={{ color: 'rgba(255, 255, 255, 0.5)' }}
+              _hover={{ borderColor: 'rgba(0, 242, 255, 0.5)' }}
+              _focus={{ borderColor: '#00f2ff', boxShadow: '0 0 0 1px rgba(0, 242, 255, 0.3)' }}
             />
           </Box>
 
           <Box width="100%">
-            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="gray.700">
+            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="rgba(255, 255, 255, 0.8)">
               Grade/Class (optional)
             </Text>
             <Select
@@ -156,12 +168,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               placeholder="Select your grade/class"
               size="lg"
               borderRadius="lg"
-              borderColor="gray.300"
-              _hover={{ borderColor: 'blue.400' }}
-              _focus={{ borderColor: 'blue.500', boxShadow: '0 0 0 1px #3182ce' }}
+              bg="rgba(255, 255, 255, 0.05)"
+              borderColor="rgba(255, 255, 255, 0.1)"
+              color="white"
+              _hover={{ borderColor: 'rgba(0, 242, 255, 0.5)' }}
+              _focus={{ borderColor: '#00f2ff', boxShadow: '0 0 0 1px rgba(0, 242, 255, 0.3)' }}
             >
               {GRADES.map((grade) => (
-                <option key={grade} value={grade}>
+                <option key={grade} value={grade} style={{ background: '#050510', color: 'white' }}>
                   {grade}
                 </option>
               ))}
@@ -169,7 +183,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           </Box>
 
           <Box width="100%">
-            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="gray.700">
+            <Text fontSize="sm" fontWeight="semibold" marginBottom={2} color="rgba(255, 255, 255, 0.8)">
               Preferred Language (optional)
             </Text>
             <RadioGroup
@@ -180,8 +194,18 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             >
               <Stack direction={{ base: 'column', sm: 'row' }} spacing={4}>
                 {Object.values(LANGUAGES).map((lang) => (
-                  <Radio key={lang} value={lang} size="md">
-                    {lang}
+                  <Radio
+                    key={lang}
+                    value={lang}
+                    size="md"
+                    colorScheme="cyan"
+                    color="#00f2ff"
+                    borderColor="rgba(255, 255, 255, 0.3)"
+                    _checked={{ bg: '#00f2ff', borderColor: '#00f2ff', color: '#00f2ff' }}
+                  >
+                    <Text as="span" color="rgba(255, 255, 255, 0.8)" ml={2}>
+                      {lang}
+                    </Text>
                   </Radio>
                 ))}
               </Stack>
@@ -190,7 +214,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
           <Button
             type="submit"
-            colorScheme="purple"
+            bg="#00f2ff"
+            color="black"
             size="lg"
             width="100%"
             isLoading={loading}
@@ -198,7 +223,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             borderRadius="lg"
             fontWeight="bold"
             fontSize="md"
-            _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+            _hover={{ bg: '#00d9e6', transform: 'translateY(-2px)', boxShadow: '0 8px 20px rgba(0, 242, 255, 0.3)' }}
+            _disabled={{ opacity: 0.5, cursor: 'not-allowed' }}
             transition="all 0.2s"
           >
             {REGISTER_CONSTANTS.REGISTER_BUTTON}
@@ -207,15 +233,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       </Box>
 
       <HStack spacing={2} justifyContent="center" pt={2}>
-        <Text fontSize="sm" color="gray.600">
+        <Text fontSize="sm" color="rgba(255, 255, 255, 0.6)">
           {REGISTER_CONSTANTS.HAVE_ACCOUNT_TEXT}
         </Text>
         <Button
           variant="link"
-          colorScheme="purple"
+          color="#00f2ff"
           size="sm"
           onClick={onSwitchToLogin}
           fontWeight="semibold"
+          _hover={{ color: '#00d9e6', textDecoration: 'underline' }}
         >
           {REGISTER_CONSTANTS.SIGN_IN_LINK}
         </Button>

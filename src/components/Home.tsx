@@ -29,7 +29,7 @@ import {
 } from '@/shared/design-system';
 import { ThreeJSBackground } from '@/components/home/ThreeJSBackground';
 import { FloatingElement } from '@/components/home/FloatingElement';
-import { HeroSection } from '@/components/home/HeroSection';
+import { HeroSection, HeroButtons } from '@/components/home/HeroSection';
 import { FeatureCard } from '@/components/home/FeatureCard';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
@@ -209,7 +209,7 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
       <FloatingElement delay={2} emoji="⭐" top="40%" left="3%" />
       <FloatingElement delay={2.5} emoji="🔥" top="50%" left="95%" />
 
-      <Container maxW="7xl" py={{ base: 10, md: 20 }} position="relative" zIndex={1} px={{ base: 4, md: 6 }}>
+      <Container maxW="7xl" py={{ base: 8, sm: 10, md: 20 }} position="relative" zIndex={1} px={{ base: 3, sm: 4, md: 6 }}>
         {/* Total Views Badge */}
         {totalViews !== null && (
           <Box
@@ -235,21 +235,39 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
         )}
 
         <VStack spacing={12} align="stretch">
-          <HeroSection onGetStarted={handleGetStarted} onLogin={handleLogin} />
+          <HeroSection />
+
+          {/* Buttons positioned below the circle */}
+          <Box mt={{ base: 6, md: '250px' }} position="relative" zIndex={2}>
+            <HeroButtons onGetStarted={handleGetStarted} onLogin={handleLogin} />
+          </Box>
 
           {/* Features Section */}
-          <VStack spacing={{ base: 6, md: 8 }} mt={{ base: 0, md: '350px' }}>
+          <VStack spacing={{ base: 5, sm: 6, md: 8 }} mt={{ base: 0, md: 8 }} position="relative" zIndex={2}>
             <Heading
-              size={{ base: 'xl', md: '2xl' }}
-              color="white"
+              size={{ base: 'lg', sm: 'xl', md: '2xl' }}
+              color="#ffffff"
               textAlign="center"
-              textShadow="2px 2px 4px rgba(0,0,0,0.3)"
-              px={{ base: 4, md: 0 }}
+              textShadow="0 0 15px rgba(0, 242, 255, 0.6), 0 0 30px rgba(0, 242, 255, 0.4), 0 0 45px rgba(0, 242, 255, 0.2), 3px 3px 10px rgba(0,0,0,0.9)"
+              px={{ base: 4, sm: 4, md: 0 }}
+              fontSize={{ base: '1.5rem', sm: '1.75rem', md: '2.25rem' }}
+              fontWeight="extrabold"
+              position="relative"
+              zIndex={3}
+              mb={{ base: 2, md: 0 }}
+              letterSpacing="wide"
             >
               Why Choose {APP_CONSTANTS.BRAND_NAME}? 🎯
             </Heading>
 
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 3, md: 6 }} width="100%" maxW="900px" mx="auto">
+            <SimpleGrid
+              columns={{ base: 1, md: 3 }}
+              spacing={{ base: 4, sm: 4, md: 6 }}
+              width="100%"
+              maxW={{ base: '100%', md: '900px' }}
+              mx="auto"
+              px={{ base: 2, sm: 4, md: 0 }}
+            >
               <FeatureCard
                 emoji="📚"
                 title="AI Study Mode"
@@ -275,32 +293,55 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
 
       {/* Auth Modal */}
       <Modal isOpen={isOpen} onClose={handleClose} size={{ base: 'full', md: 'lg' }} isCentered>
-        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-        <ModalContent borderRadius="2xl" overflow="hidden">
-          <ModalCloseButton />
+        <ModalOverlay bg="blackAlpha.800" backdropFilter="blur(10px)" />
+        <ModalContent
+          bg="rgba(5, 5, 16, 0.95)"
+          backdropFilter="blur(20px)"
+          border="1px solid"
+          borderColor="rgba(255, 255, 255, 0.1)"
+          borderRadius="2xl"
+          overflow="hidden"
+          boxShadow="0 20px 60px rgba(0, 242, 255, 0.2)"
+        >
+          <ModalCloseButton
+            color="white"
+            _hover={{ color: '#00f2ff', bg: 'rgba(0, 242, 255, 0.1)' }}
+          />
           <ModalBody p={0}>
-            <Tabs index={activeTab} onChange={setActiveTab} colorScheme="purple">
+            <Tabs index={activeTab} onChange={setActiveTab}>
               <Box
-                bgGradient="linear(to-r, purple.500, pink.500)"
+                bg="rgba(255, 255, 255, 0.05)"
+                borderBottom="1px solid"
+                borderColor="rgba(255, 255, 255, 0.1)"
                 px={6}
                 py={4}
               >
                 <TabList borderBottom="none">
                 <Tab
-                  color="white"
-                  _selected={{ color: 'white', borderBottom: '2px solid white', fontWeight: 'bold' }}
-                  _hover={{ opacity: 0.8 }}
+                  color="rgba(255, 255, 255, 0.7)"
+                  _selected={{
+                    color: '#00f2ff',
+                    borderBottom: '2px solid #00f2ff',
+                    fontWeight: 'bold',
+                  }}
+                  _hover={{ color: '#00f2ff', opacity: 0.8 }}
                   fontSize={{ base: 'sm', md: 'lg' }}
                   px={{ base: 4, md: 6 }}
+                  transition="all 0.3s"
                 >
                   Login 👋
                 </Tab>
                 <Tab
-                  color="white"
-                  _selected={{ color: 'white', borderBottom: '2px solid white', fontWeight: 'bold' }}
-                  _hover={{ opacity: 0.8 }}
+                  color="rgba(255, 255, 255, 0.7)"
+                  _selected={{
+                    color: '#00f2ff',
+                    borderBottom: '2px solid #00f2ff',
+                    fontWeight: 'bold',
+                  }}
+                  _hover={{ color: '#00f2ff', opacity: 0.8 }}
                   fontSize={{ base: 'sm', md: 'lg' }}
                   px={{ base: 4, md: 6 }}
+                  transition="all 0.3s"
                 >
                   Sign Up 🎉
                 </Tab>
@@ -308,7 +349,7 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
               </Box>
 
               <TabPanels>
-                <TabPanel px={{ base: 4, md: 6 }} py={{ base: 6, md: 8 }}>
+                <TabPanel px={{ base: 4, md: 6 }} py={{ base: 6, md: 8 }} bg="transparent">
                   <AnimatePresence mode="wait">
                     {authError && (
                       <motion.div
@@ -316,7 +357,16 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                       >
-                        <Alert status="error" borderRadius="md" mb={4} fontSize={{ base: 'xs', md: 'sm' }}>
+                        <Alert
+                          status="error"
+                          borderRadius="md"
+                          mb={4}
+                          fontSize={{ base: 'xs', md: 'sm' }}
+                          bg="rgba(255, 0, 0, 0.1)"
+                          border="1px solid"
+                          borderColor="rgba(255, 0, 0, 0.3)"
+                          color="white"
+                        >
                           <AlertIcon />
                           {authError}
                         </Alert>
@@ -329,7 +379,7 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
                     onError={setAuthError}
                   />
                 </TabPanel>
-                <TabPanel px={{ base: 4, md: 6 }} py={{ base: 6, md: 8 }}>
+                <TabPanel px={{ base: 4, md: 6 }} py={{ base: 6, md: 8 }} bg="transparent">
                   <AnimatePresence mode="wait">
                     {authError && (
                       <motion.div
@@ -337,7 +387,16 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                       >
-                        <Alert status="error" borderRadius="md" mb={4} fontSize={{ base: 'xs', md: 'sm' }}>
+                        <Alert
+                          status="error"
+                          borderRadius="md"
+                          mb={4}
+                          fontSize={{ base: 'xs', md: 'sm' }}
+                          bg="rgba(255, 0, 0, 0.1)"
+                          border="1px solid"
+                          borderColor="rgba(255, 0, 0, 0.3)"
+                          color="white"
+                        >
                           <AlertIcon />
                           {authError}
                         </Alert>
