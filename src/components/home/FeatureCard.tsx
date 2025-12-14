@@ -1,5 +1,6 @@
 /**
  * Feature card component with hover animations
+ * Matches dark Three.js theme with glassmorphic design
  */
 
 import { motion } from 'framer-motion';
@@ -20,30 +21,45 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
 }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay }}
-      whileHover={{ scale: 1.05, rotate: 2 }}
-      whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.5, delay }}
+      whileHover={{ scale: 1.03, y: -5 }}
+      whileTap={{ scale: 0.98 }}
     >
       <Card
-        bg="rgba(255, 255, 255, 0.95)"
+        bg="rgba(255, 255, 255, 0.05)"
         backdropFilter="blur(10px)"
-        borderRadius="2xl"
-        boxShadow="xl"
+        border="1px solid"
+        borderColor="rgba(255, 255, 255, 0.1)"
+        borderRadius="xl"
+        boxShadow="0 8px 32px rgba(0, 0, 0, 0.3)"
         height="100%"
         cursor="pointer"
+        transition="all 0.3s"
         _hover={{
-          boxShadow: '2xl',
+          bg: 'rgba(255, 255, 255, 0.08)',
+          borderColor: 'rgba(0, 242, 255, 0.3)',
+          boxShadow: '0 12px 40px rgba(0, 242, 255, 0.2)',
         }}
       >
-        <CardBody p={{ base: 3, sm: 4, md: 5, lg: 6 }}>
-          <VStack spacing={{ base: 2.5, sm: 3, md: 3.5, lg: 4 }} align="center">
-            <Text fontSize={{ base: '2xl', sm: '3xl', md: '4xl', lg: '5xl' }}>{emoji}</Text>
-            <Heading size={{ base: 'sm', sm: 'md', md: 'lg' }} color="purple.600" textAlign="center">
+        <CardBody p={{ base: 3, md: 4 }}>
+          <VStack spacing={{ base: 2, md: 3 }} align="center">
+            <Text fontSize={{ base: 'xl', md: '2xl' }}>{emoji}</Text>
+            <Heading
+              size={{ base: 'xs', md: 'sm' }}
+              color="#00f2ff"
+              textAlign="center"
+              fontWeight="600"
+            >
               {title}
             </Heading>
-            <Text fontSize={{ base: 'xs', sm: 'sm', md: 'md' }} color="gray.600" textAlign="center" lineHeight="tall">
+            <Text
+              fontSize={{ base: '0.65rem', md: 'sm' }}
+              color="rgba(255, 255, 255, 0.7)"
+              textAlign="center"
+              lineHeight="1.5"
+            >
               {description}
             </Text>
           </VStack>

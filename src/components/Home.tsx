@@ -27,12 +27,10 @@ import {
   Alert,
   AlertIcon,
 } from '@/shared/design-system';
-import { AnimatedGradient } from '@/components/home/AnimatedGradient';
+import { ThreeJSBackground } from '@/components/home/ThreeJSBackground';
 import { FloatingElement } from '@/components/home/FloatingElement';
 import { HeroSection } from '@/components/home/HeroSection';
-import { HeroImage } from '@/components/home/HeroImage';
 import { FeatureCard } from '@/components/home/FeatureCard';
-import { CTASection } from '@/components/home/CTASection';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { APP_CONSTANTS } from '@/constants/app';
@@ -201,7 +199,7 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
 
   return (
     <Box position="relative" minHeight="100vh" overflow="hidden">
-      <AnimatedGradient />
+      <ThreeJSBackground />
 
       {/* Floating decorative elements */}
       <FloatingElement delay={0} emoji="✨" top="10%" left="5%" />
@@ -239,10 +237,8 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
         <VStack spacing={12} align="stretch">
           <HeroSection onGetStarted={handleGetStarted} onLogin={handleLogin} />
 
-          <HeroImage />
-
           {/* Features Section */}
-          <VStack spacing={{ base: 6, md: 8 }}>
+          <VStack spacing={{ base: 6, md: 8 }} mt={{ base: 0, md: '350px' }}>
             <Heading
               size={{ base: 'xl', md: '2xl' }}
               color="white"
@@ -253,7 +249,7 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
               Why Choose {APP_CONSTANTS.BRAND_NAME}? 🎯
             </Heading>
 
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 4, md: 8 }} width="100%">
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: 3, md: 6 }} width="100%" maxW="900px" mx="auto">
               <FeatureCard
                 emoji="📚"
                 title="AI Study Mode"
@@ -274,8 +270,6 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
               />
             </SimpleGrid>
           </VStack>
-
-          <CTASection onGetStarted={handleGetStarted} />
         </VStack>
       </Container>
 
