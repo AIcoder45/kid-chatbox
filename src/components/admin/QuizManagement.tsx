@@ -288,6 +288,7 @@ export const QuizManagement: React.FC = () => {
           onClose={() => { onScheduleClose(); setEditingScheduledTestId(null); resetScheduleForm(); }}
           onSubmit={handleScheduleTestSubmit}
           quizzes={quizzes}
+          scheduledTests={scheduledTests}
           plans={plans}
           formData={scheduleFormData}
           setFormData={setScheduleFormData}

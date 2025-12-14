@@ -24,6 +24,9 @@ import { AnswerResult, QuizConfig } from '@/types/quiz';
 import { MESSAGES } from '@/constants/quiz';
 import { MESSAGES as APP_MESSAGES } from '@/constants/app';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { Certificate } from './Certificate';
+import { generateCertificate } from '@/utils/certificate';
+import { authApi } from '@/services/api';
 
 interface ResultsViewProps {
   score: number;
@@ -52,7 +55,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   score,
   totalQuestions,
   allAnswerResults,
-  config: _config,
+  config,
   improvementTips,
   resultSaved,
   timeTaken,
@@ -64,6 +67,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const percentage = Math.round((score / totalQuestions) * 100);
   const PASSING_THRESHOLD = 60;
   const hasPassed = percentage >= PASSING_THRESHOLD;
+  
+  // Get student name from current user
+  const { user } = authApi.getCurrentUser();
+  const studentName = (user as { name?: string })?.name || 'Student';
 
   // Format time taken
   const formatTime = (seconds: number): string => {
@@ -207,6 +214,40 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               </VStack>
             </CardBody>
           </Card>
+        </motion.div>
+      )}
+
+      {/* Certificate Component - Shows after congratulations */}
+      {hasPassed && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.2, type: 'spring', stiffness: 100 }}
+          style={{ width: '100%' }}
+        >
+          <Certificate
+            studentName={studentName}
+            quizName={config?.topicName || config?.subtopicName || 'Quiz'}
+            score={score}
+            totalQuestions={totalQuestions}
+            percentage={percentage}
+            date={new Date().toISOString()}
+            onDownload={async () => {
+              try {
+                await generateCertificate({
+                  studentName,
+                  quizName: config?.topicName || config?.subtopicName || 'Quiz',
+                  rank: 1, // Default rank, can be updated if ranking system exists
+                  score: percentage,
+                  compositeScore: percentage,
+                  date: new Date().toISOString(),
+                  totalParticipants: 1, // Default, can be updated if needed
+                });
+              } catch (error) {
+                console.error('Failed to generate certificate:', error);
+              }
+            }}
+          />
         </motion.div>
       )}
 
