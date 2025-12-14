@@ -305,6 +305,8 @@ export const Home: React.FC<HomeProps> = ({ onAuthSuccess }) => {
         >
           <ModalCloseButton
             color="white"
+            onClick={handleClose}
+            zIndex={10}
             _hover={{ color: '#00f2ff', bg: 'rgba(0, 242, 255, 0.1)' }}
           />
           <ModalBody p={0}>

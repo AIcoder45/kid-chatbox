@@ -9,7 +9,7 @@ const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { getFreemiumPlan, assignPlanToUser } = require('../utils/plans');
 const { trackEvent, EVENT_TYPES } = require('../utils/eventTracker');
-const { sendWelcomeEmail } = require('../utils/email');
+const { sendWelcomeEmail, sendGoogleWelcomeEmail } = require('../utils/email');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -45,10 +45,10 @@ router.post('/register', async (req, res, next) => {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create user with default status 'pending'
+    // Create user with default status 'enabled' (auto-approved)
     const result = await pool.query(
       `INSERT INTO users (email, password_hash, name, age, grade, preferred_language, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+       VALUES ($1, $2, $3, $4, $5, $6, 'enabled')
        RETURNING id, email, name, age, grade, preferred_language, status, created_at`,
       [email, passwordHash, name, age || null, grade || null, preferredLanguage || null]
     );
@@ -122,7 +122,7 @@ router.post('/register', async (req, res, next) => {
         createdAt: user.created_at,
       },
       token,
-      message: 'Registration successful. Your account is pending approval.',
+      message: 'Registration successful. Your account is enabled and ready to use!',
     });
   } catch (error) {
     next(error);
@@ -249,10 +249,10 @@ router.post('/google', async (req, res, next) => {
     let user;
 
     if (result.rows.length === 0) {
-      // Create new user with pending status
+      // Create new user with enabled status (auto-approved for Google login)
       result = await pool.query(
         `INSERT INTO users (email, name, password_hash, status, avatar_url)
-         VALUES ($1, $2, $3, 'pending', $4)
+         VALUES ($1, $2, $3, 'enabled', $4)
          RETURNING id, email, name, age, grade, preferred_language, status, created_at`,
         [email, name, null, picture || null] // No password for social login
       );
@@ -277,6 +277,34 @@ router.post('/google', async (req, res, next) => {
       } catch (error) {
         console.error(`Error assigning Freemium plan to OAuth user ${user.id} (${user.email}):`, error.message || error);
         // Don't fail registration if plan assignment fails
+      }
+
+      // Track registration event
+      try {
+        await trackEvent({
+          userId: user.id,
+          eventType: EVENT_TYPES.USER_REGISTER,
+          metadata: {
+            email: user.email,
+            method: 'google',
+          },
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+        });
+      } catch (error) {
+        console.error(`Error tracking Google registration event:`, error.message || error);
+      }
+
+      // Send welcome email for Google login users (no password needed)
+      try {
+        await sendGoogleWelcomeEmail({
+          email: user.email,
+          name: user.name,
+        });
+      } catch (emailError) {
+        // Log error but don't fail registration if email fails
+        console.error(`Failed to send welcome email to ${user.email}:`, emailError.message || emailError);
+        // Registration still succeeds even if email fails
       }
     } else {
       user = result.rows[0];
@@ -341,10 +369,10 @@ router.post('/social', async (req, res, next) => {
     let user;
 
     if (result.rows.length === 0) {
-      // Create new user
+      // Create new user with enabled status
       result = await pool.query(
         `INSERT INTO users (email, name, password_hash, status)
-         VALUES ($1, $2, $3, 'pending')
+         VALUES ($1, $2, $3, 'enabled')
          RETURNING id, email, name, age, grade, preferred_language, status, created_at`,
         [email, name, null]
       );

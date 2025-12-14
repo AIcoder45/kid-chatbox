@@ -126,6 +126,42 @@ async function sendWelcomeEmail({ email, name, password }) {
 }
 
 /**
+ * Send welcome email to Google login users (no password needed)
+ * @param {Object} userData - User information
+ * @param {string} userData.email - User email address
+ * @param {string} userData.name - User name
+ * @returns {Promise<Object>} Email send result
+ * @throws {Error} If email sending fails
+ */
+async function sendGoogleWelcomeEmail({ email, name }) {
+  if (!email || !name) {
+    throw new Error('Email and name are required to send welcome email');
+  }
+
+  const transport = getTransporter();
+
+  const mailOptions = {
+    from: `"Guru ID Team" <${EMAIL_FROM_ADDRESS}>`,
+    to: email,
+    subject: 'Welcome to Guru ID - Your Account is Ready!',
+    html: getGoogleWelcomeEmailTemplate(name, email),
+    text: getGoogleWelcomeEmailTextTemplate(name, email),
+  };
+
+  try {
+    const info = await transport.sendMail(mailOptions);
+    console.log(`Welcome email sent successfully to ${email}:`, info.messageId);
+    return {
+      success: true,
+      messageId: info.messageId,
+    };
+  } catch (error) {
+    console.error(`Failed to send welcome email to ${email}:`, error.message);
+    throw error;
+  }
+}
+
+/**
  * Generate HTML email template for welcome email
  * @param {string} name - User name
  * @param {string} email - User email
@@ -168,7 +204,7 @@ function getWelcomeEmailTemplate(name, email, password) {
     </div>
     
     <p style="font-size: 16px; margin-bottom: 20px;">
-      Your account is currently pending approval. Once approved by our admin team, you'll be able to access all features of Guru ID, including:
+      Your account is now <strong style="color: #28a745;">enabled</strong> and ready to use! You can access all features of Guru ID, including:
     </p>
     
     <ul style="font-size: 16px; margin-bottom: 20px; padding-left: 20px;">
@@ -178,10 +214,6 @@ function getWelcomeEmailTemplate(name, email, password) {
       <li>Age-appropriate learning content</li>
       <li>Multi-language support</li>
     </ul>
-    
-    <p style="font-size: 16px; margin-bottom: 20px;">
-      We'll notify you via email once your account has been approved.
-    </p>
     
     <p style="font-size: 16px; margin-bottom: 30px;">
       If you have any questions or need assistance, please don't hesitate to contact our support team.
@@ -225,14 +257,124 @@ Password: ${password}
 
 ⚠️ Important: Please keep your credentials safe and secure. We recommend changing your password after your first login.
 
-Your account is currently pending approval. Once approved by our admin team, you'll be able to access all features of Guru ID, including:
+Your account is now enabled and ready to use! You can access all features of Guru ID, including:
 - Interactive quizzes and assessments
 - Personalized study materials
 - Progress tracking and analytics
 - Age-appropriate learning content
 - Multi-language support
 
-We'll notify you via email once your account has been approved.
+If you have any questions or need assistance, please don't hesitate to contact our support team.
+
+Once again, welcome aboard! We're excited to be part of your learning journey.
+
+Best regards,
+The Guru ID Team
+
+---
+This is an automated email. Please do not reply to this message.
+© ${new Date().getFullYear()} Guru ID. All rights reserved.
+  `.trim();
+}
+
+/**
+ * Generate HTML email template for Google login welcome email
+ * @param {string} name - User name
+ * @param {string} email - User email
+ * @returns {string} HTML email content
+ */
+function getGoogleWelcomeEmailTemplate(name, email) {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Guru ID</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+  <div style="background: #ffffff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+    ${getEmailHeader()}
+  
+  <div style="background: #ffffff; padding: 40px 30px; border-radius: 0 0 10px 10px;">
+    <p style="font-size: 16px; margin-bottom: 20px;">Dear ${name},</p>
+    
+    <p style="font-size: 16px; margin-bottom: 20px;">
+      Welcome to Guru ID! 🎉 We're thrilled to have you join our learning community.
+    </p>
+    
+    <p style="font-size: 16px; margin-bottom: 20px;">
+      Your account has been successfully created using Google Sign-In. Your account is now <strong style="color: #28a745;">enabled</strong> and ready to use!
+    </p>
+    
+    <div style="background: #ffffff; border: 2px solid #667eea; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <p style="margin: 10px 0; font-size: 14px;"><strong>Email:</strong> <span style="color: #667eea;">${email}</span></p>
+      <p style="margin: 10px 0; font-size: 14px;"><strong>Login Method:</strong> <span style="color: #667eea;">Google Sign-In</span></p>
+    </div>
+    
+    <p style="font-size: 16px; margin-bottom: 20px;">
+      You can now access all features of Guru ID, including:
+    </p>
+    
+    <ul style="font-size: 16px; margin-bottom: 20px; padding-left: 20px;">
+      <li>Interactive quizzes and assessments</li>
+      <li>Personalized study materials</li>
+      <li>Progress tracking and analytics</li>
+      <li>Age-appropriate learning content</li>
+      <li>Multi-language support</li>
+    </ul>
+    
+    <p style="font-size: 16px; margin-bottom: 20px;">
+      Simply use the "Login with Google" button to access your account anytime.
+    </p>
+    
+    <p style="font-size: 16px; margin-bottom: 30px;">
+      If you have any questions or need assistance, please don't hesitate to contact our support team.
+    </p>
+    
+    <p style="font-size: 16px; margin-bottom: 10px;">
+      Once again, welcome aboard! We're excited to be part of your learning journey.
+    </p>
+    
+    <p style="font-size: 16px; margin-top: 30px;">
+      Best regards,<br>
+      <strong style="color: #667eea;">The Guru ID Team</strong>
+    </p>
+  </div>
+  ${getEmailFooter()}
+  </div>
+</body>
+</html>
+  `.trim();
+}
+
+/**
+ * Generate plain text email template for Google login welcome email
+ * @param {string} name - User name
+ * @param {string} email - User email
+ * @returns {string} Plain text email content
+ */
+function getGoogleWelcomeEmailTextTemplate(name, email) {
+  return `
+Welcome to Guru ID! 🎉
+
+Dear ${name},
+
+Welcome to Guru ID! We're thrilled to have you join our learning community.
+
+Your account has been successfully created using Google Sign-In. Your account is now enabled and ready to use!
+
+Email: ${email}
+Login Method: Google Sign-In
+
+You can now access all features of Guru ID, including:
+- Interactive quizzes and assessments
+- Personalized study materials
+- Progress tracking and analytics
+- Age-appropriate learning content
+- Multi-language support
+
+Simply use the "Login with Google" button to access your account anytime.
 
 If you have any questions or need assistance, please don't hesitate to contact our support team.
 
@@ -568,6 +710,7 @@ This is an automated email. Please do not reply to this message.
 
 module.exports = {
   sendWelcomeEmail,
+  sendGoogleWelcomeEmail,
   sendApprovalEmail,
   sendQuizCompletionEmail,
   verifyConnection,
