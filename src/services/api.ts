@@ -649,5 +649,45 @@ export const publicApi = {
       };
     }
   },
+
+  /**
+   * Get education news articles
+   */
+  getEducationNews: async (params?: {
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    success: boolean;
+    totalResults: number;
+    articles: Array<{
+      source: {
+        id: string | null;
+        name: string;
+      };
+      author: string;
+      title: string;
+      description: string;
+      url: string;
+      urlToImage: string | null;
+      publishedAt: string;
+      content: string | null;
+    }>;
+    page: number;
+    pageSize: number;
+  }> => {
+    try {
+      const response = await apiClient.get('/public/news', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get education news:', error);
+      return {
+        success: false,
+        totalResults: 0,
+        articles: [],
+        page: 1,
+        pageSize: 10,
+      };
+    }
+  },
 };
 

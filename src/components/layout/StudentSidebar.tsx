@@ -44,6 +44,7 @@ const navItems = [
   { path: '/study-library', label: 'Study Library', icon: '📚' },
   { path: '/study-history', label: 'Study History', icon: '📖' },
   { path: '/quiz-history', label: 'Quiz History', icon: '📊' },
+  { path: '/news', label: 'Education News', icon: '📰' },
   { path: '/profile', label: 'My Profile', icon: '👤' },
 ];
 

@@ -258,5 +258,85 @@ router.get('/word-of-the-day', async (req, res, next) => {
   }
 });
 
+/**
+ * Get Education News from NewsAPI
+ * GET /api/public/news
+ * Optional query params: ?page=1&pageSize=10
+ */
+router.get('/news', async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = Math.min(parseInt(req.query.pageSize) || 10, 20); // Max 20 articles per request
+    
+    // NewsAPI configuration
+    const NEWS_API_KEY = process.env.NEWS_API_KEY || '28ee1c94d3ba4e82b372e9be88d08aed';
+    const NEWS_API_URL = 'https://newsapi.org/v2/everything';
+    
+    // Fetch news from NewsAPI
+    const response = await axios.get(NEWS_API_URL, {
+      params: {
+        q: 'education',
+        apiKey: NEWS_API_KEY,
+        page: page,
+        pageSize: pageSize,
+        language: 'en',
+        sortBy: 'publishedAt',
+      },
+      timeout: 10000, // 10 second timeout
+    });
+
+    if (response.data && response.data.status === 'ok') {
+      // Filter and sanitize articles for child-friendly content
+      const articles = response.data.articles
+        .filter((article) => {
+          // Filter out articles with null/missing required fields
+          return (
+            article.title &&
+            article.description &&
+            article.url &&
+            article.source &&
+            article.source.name
+          );
+        })
+        .map((article) => ({
+          source: {
+            id: article.source.id,
+            name: article.source.name,
+          },
+          author: article.author || 'Unknown Author',
+          title: article.title,
+          description: article.description,
+          url: article.url,
+          urlToImage: article.urlToImage || null,
+          publishedAt: article.publishedAt,
+          content: article.content || null,
+        }));
+
+      res.json({
+        success: true,
+        totalResults: response.data.totalResults,
+        articles: articles,
+        page: page,
+        pageSize: pageSize,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch news from NewsAPI',
+        articles: [],
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching education news:', error.message);
+    
+    // Return error response
+    res.status(500).json({
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch education news',
+      articles: [],
+    });
+  }
+});
+
 module.exports = router;
 

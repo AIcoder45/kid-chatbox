@@ -5,3 +5,4 @@
 export * from './quiz';
 export * from './auth';
 export * from './api';
+export * from './news';

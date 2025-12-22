@@ -31,6 +31,7 @@ import { QuizManagement } from '@/components/admin/QuizManagement';
 import { QuizHistoryManagement } from '@/components/admin/QuizHistoryManagement';
 import { StudyLibraryContentManagement } from '@/components/admin/StudyLibraryContentManagement';
 import { QuizResultsAnalytics } from '@/components/admin/QuizResultsAnalytics';
+import NewsFeed from '@/components/NewsFeed';
 import { authApi } from '@/services/api';
 import { User } from '@/types';
 import { QuizTimerProvider } from '@/contexts/QuizTimerContext';
@@ -353,6 +354,18 @@ export const App: React.FC = () => {
                   <ScheduledTests />
                 </StudentLayout>
               </AuthGuard>
+            }
+          />
+          <Route
+            path="/news"
+            element={
+              user ? (
+                <StudentLayout user={user}>
+                  <NewsFeed />
+                </StudentLayout>
+              ) : (
+                <NewsFeed />
+              )
             }
           />
           {/* Admin Routes */}
