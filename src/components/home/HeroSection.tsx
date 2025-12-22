@@ -1,10 +1,12 @@
 /**
  * Hero section component for home page
+ * Enhanced with React Bits animations
  */
 
 import { motion } from 'framer-motion';
 import { VStack, HStack, Text, Button, Heading } from '@/shared/design-system';
 import { APP_CONSTANTS } from '@/constants/app';
+import { AnimatedBounce, SparkButton } from '@/components/shared/ReactBitsAnimations';
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -37,7 +39,9 @@ export const HeroSection: React.FC = () => {
             fontWeight="extrabold"
             letterSpacing="tight"
           >
-            {APP_CONSTANTS.BRAND_NAME}
+            <AnimatedBounce>
+              {APP_CONSTANTS.BRAND_NAME}
+            </AnimatedBounce>
           </Heading>
         </motion.div>
 
@@ -77,49 +81,53 @@ export const HeroButtons: React.FC<HeroSectionProps> = ({
     >
       <HStack spacing={{ base: 2, md: 4 }} flexWrap="wrap" justifyContent="center">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              size={{ base: 'md', md: 'lg' }}
-              colorScheme="purple"
-              bg="purple.500"
-              color="white"
-              px={{ base: 6, md: 8 }}
-              py={{ base: 4, md: 6 }}
-              fontSize={{ base: 'sm', md: 'lg' }}
-              fontWeight="bold"
-              borderRadius="full"
-              boxShadow="xl"
-              onClick={onGetStarted}
-              _hover={{
-                bg: 'purple.600',
-                transform: 'translateY(-2px)',
-                boxShadow: '2xl',
-              }}
-            >
-              Get Started 🚀
-            </Button>
+            <SparkButton sparkColor="#a855f7" sparkCount={15}>
+              <Button
+                size={{ base: 'md', md: 'lg' }}
+                colorScheme="purple"
+                bg="purple.500"
+                color="white"
+                px={{ base: 6, md: 8 }}
+                py={{ base: 4, md: 6 }}
+                fontSize={{ base: 'sm', md: 'lg' }}
+                fontWeight="bold"
+                borderRadius="full"
+                boxShadow="xl"
+                onClick={onGetStarted}
+                _hover={{
+                  bg: 'purple.600',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '2xl',
+                }}
+              >
+                Get Started 🚀
+              </Button>
+            </SparkButton>
           </motion.div>
 
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              size={{ base: 'md', md: 'lg' }}
-              variant="outline"
-              borderColor="white"
-              color="white"
-              px={{ base: 6, md: 8 }}
-              py={{ base: 4, md: 6 }}
-              fontSize={{ base: 'sm', md: 'lg' }}
-              fontWeight="bold"
-              borderRadius="full"
-              bg="rgba(255, 255, 255, 0.1)"
-              backdropFilter="blur(10px)"
-              onClick={onLogin}
-              _hover={{
-                bg: 'rgba(255, 255, 255, 0.2)',
-                transform: 'translateY(-2px)',
-              }}
-            >
-              Login 👋
-            </Button>
+            <SparkButton sparkColor="#00f2ff" sparkCount={12}>
+              <Button
+                size={{ base: 'md', md: 'lg' }}
+                variant="outline"
+                borderColor="white"
+                color="white"
+                px={{ base: 6, md: 8 }}
+                py={{ base: 4, md: 6 }}
+                fontSize={{ base: 'sm', md: 'lg' }}
+                fontWeight="bold"
+                borderRadius="full"
+                bg="rgba(255, 255, 255, 0.1)"
+                backdropFilter="blur(10px)"
+                onClick={onLogin}
+                _hover={{
+                  bg: 'rgba(255, 255, 255, 0.2)',
+                  transform: 'translateY(-2px)',
+                }}
+              >
+                Login 👋
+              </Button>
+            </SparkButton>
           </motion.div>
         </HStack>
       </motion.div>

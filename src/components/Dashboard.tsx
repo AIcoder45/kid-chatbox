@@ -23,6 +23,7 @@ import { MESSAGES } from '@/constants/app';
 import { UpcomingTestsSidebar } from './UpcomingTestsSidebar';
 import { StudentUpcomingTestsMarquee } from '@/components/layout/StudentUpcomingTestsMarquee';
 import { PullToRefresh } from './PullToRefresh';
+import { WordOfTheDay } from './WordOfTheDay';
 
 interface DashboardProps {
   user: User;
@@ -489,6 +490,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 </Card>
               </Box>
             )}
+
+            {/* Word of the Day */}
+            <WordOfTheDay />
 
             {/* Upcoming Tests Sidebar */}
             <UpcomingTestsSidebar planInfo={planInfo} />

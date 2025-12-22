@@ -1,6 +1,7 @@
 /**
  * Feature card component with hover animations
  * Matches dark Three.js theme with glassmorphic design
+ * Enhanced with React Bits animations
  */
 
 import { motion } from 'framer-motion';

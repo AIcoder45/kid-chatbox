@@ -17,6 +17,7 @@ import {
   HStack,
   FormControl,
   FormLabel,
+  FormHelperText,
   Input,
   Textarea,
   Select,
@@ -42,10 +43,47 @@ import { countLines, MAX_LINES } from './csvParsing';
 import { downloadJSONTemplate, downloadCSVTemplate } from './fileTemplates';
 import { TopicSubtopicSelector } from './TopicSubtopicSelector';
 
+interface AIGenerateData {
+  useManualInput: boolean;
+  manualTopicName: string;
+  manualSubtopicName: string;
+  selectedTopic: string;
+  selectedSubtopic: string;
+  name: string;
+  description: string;
+  ageGroup: string;
+  difficulty: string;
+  numberOfQuestions: number;
+  passingPercentage: number;
+  timeLimit: string;
+  topics: string[];
+  language: string;
+  gradeLevel?: string;
+  sampleQuestion?: string;
+  examStyle?: string;
+}
+
+interface JSONUploadData {
+  useManualInput: boolean;
+  manualTopicName: string;
+  manualSubtopicName: string;
+  selectedTopic: string;
+  selectedSubtopic: string;
+  name: string;
+  description: string;
+  ageGroup: string;
+  difficulty: string;
+  passingPercentage: number;
+  timeLimit: string;
+  jsonContent?: string;
+  uploadMethod?: 'text' | 'file';
+  uploadedFile?: File | null;
+}
+
 interface CreateQuizModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (type: 'ai' | 'json', data: any) => Promise<void>;
+  onCreate: (type: 'ai' | 'json', data: AIGenerateData | JSONUploadData) => Promise<void>;
   topics: Topic[];
   subtopics: Subtopic[];
   onTopicChange: (topicId: string) => void;
@@ -81,6 +119,9 @@ export const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
     timeLimit: '',
     topics: [] as string[],
     language: 'English',
+    gradeLevel: '',
+    sampleQuestion: '',
+    examStyle: '',
   });
 
   const [jsonFormData, setJsonFormData] = useState({
@@ -119,6 +160,9 @@ export const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
       timeLimit: '',
       topics: [],
       language: 'English',
+      gradeLevel: '',
+      sampleQuestion: '',
+      examStyle: '',
     });
     setJsonFormData({
       name: '',
@@ -408,6 +452,45 @@ export const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
                       </Select>
                     </FormControl>
                   </HStack>
+
+                  <HStack>
+                    <FormControl>
+                      <FormLabel>Grade/Class Level</FormLabel>
+                      <Input
+                        value={aiFormData.gradeLevel}
+                        onChange={(e) => setAiFormData({ ...aiFormData, gradeLevel: e.target.value })}
+                        placeholder="e.g., Class 5, Grade 3"
+                      />
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel>Exam Style</FormLabel>
+                      <Select
+                        value={aiFormData.examStyle}
+                        onChange={(e) => setAiFormData({ ...aiFormData, examStyle: e.target.value })}
+                        placeholder="Select exam style (optional)"
+                      >
+                        <option value="">None</option>
+                        <option value="CBSE">CBSE</option>
+                        <option value="NCERT">NCERT</option>
+                        <option value="Olympiad">Olympiad</option>
+                        <option value="Competitive">Competitive</option>
+                      </Select>
+                    </FormControl>
+                  </HStack>
+
+                  <FormControl>
+                    <FormLabel>Sample Question Pattern (Optional)</FormLabel>
+                    <Textarea
+                      value={aiFormData.sampleQuestion}
+                      onChange={(e) => setAiFormData({ ...aiFormData, sampleQuestion: e.target.value })}
+                      placeholder="Enter a sample question or pattern to guide AI generation style..."
+                      rows={3}
+                    />
+                    <FormHelperText>
+                      Provide a sample question to help AI understand the desired question style, format, and complexity
+                    </FormHelperText>
+                  </FormControl>
                 </VStack>
               </TabPanel>
 

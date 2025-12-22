@@ -104,3 +104,4 @@ VITE_API_BASE_URL=http://localhost:3000/api
 - Check database connection logs
 - Manually run table creation SQL from `server/config/database.js`
 
+

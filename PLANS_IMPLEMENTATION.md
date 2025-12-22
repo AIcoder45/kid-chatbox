@@ -215,3 +215,4 @@ When a user exceeds their daily limit:
 - Only active plans can be assigned to users
 - Plans with assigned users cannot be hard-deleted (soft-deleted by setting status to inactive)
 
+

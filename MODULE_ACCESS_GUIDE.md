@@ -199,3 +199,4 @@ node server/scripts/check-user-roles.js user@example.com
 ✅ **Admin approval automatically grants module access**  
 ✅ **Access is enforced at both frontend and backend levels**
 
+

@@ -248,3 +248,4 @@ npm run dev:all
 - Verify database tables exist
 - Ensure environment variables are set
 
+

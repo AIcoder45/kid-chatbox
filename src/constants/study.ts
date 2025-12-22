@@ -16,3 +16,4 @@ export const STUDY_MODE_MESSAGES = {
   ERROR_GENERATION_FAILED: 'Failed to generate lesson. Please try again.',
 } as const;
 
+

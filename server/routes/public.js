@@ -3,10 +3,78 @@
  */
 
 const express = require('express');
+const axios = require('axios');
+const OpenAI = require('openai');
 const { pool } = require('../config/database');
 const { trackEvent, EVENT_TYPES } = require('../utils/eventTracker');
+const { VOCABULARY_WORDS_1000 } = require('../data/vocabulary-1000-words');
+const { SYNONYMS_ANTONYMS_FALLBACK } = require('../data/synonyms-antonyms-fallback');
 
 const router = express.Router();
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY,
+});
+
+// Word list for Word of the Day feature (1000 words)
+const VOCABULARY_WORDS = VOCABULARY_WORDS_1000;
+
+/**
+ * Get a word based on the current day
+ */
+const getWordOfTheDay = () => {
+  const today = new Date();
+  const dayOfYear = Math.floor(
+    (today - new Date(today.getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24
+  );
+  const wordIndex = dayOfYear % VOCABULARY_WORDS.length;
+  return VOCABULARY_WORDS[wordIndex];
+};
+
+/**
+ * Generate additional example sentences using OpenAI
+ */
+async function generateExampleSentences(word, partOfSpeech, definition) {
+  try {
+    if (!openai.apiKey) {
+      return [];
+    }
+
+    const prompt = `Generate 3 simple, educational example sentences using the word "${word}" (${partOfSpeech}).
+Definition: ${definition}
+
+Requirements:
+- Sentences should be appropriate for children aged 6-14
+- Keep sentences simple and clear
+- Show different contexts of usage
+- Make them educational and engaging
+
+Return ONLY a JSON array of sentences, nothing else. Format: ["sentence 1", "sentence 2", "sentence 3"]`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an educational assistant helping children learn vocabulary. Generate simple, clear example sentences.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 300,
+    });
+
+    const content = response.choices[0].message.content.trim();
+    const sentences = JSON.parse(content);
+    return Array.isArray(sentences) ? sentences.slice(0, 3) : [];
+  } catch (error) {
+    console.error('Error generating example sentences:', error.message);
+    return [];
+  }
+}
 
 /**
  * Track home page view
@@ -74,6 +142,119 @@ router.get('/home-views', async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+});
+
+/**
+ * Get Word of the Day with definition, examples, and phonetics
+ * GET /api/public/word-of-the-day
+ * Optional query param: ?word=hello (for testing)
+ */
+router.get('/word-of-the-day', async (req, res, next) => {
+  try {
+    const word = req.query.word || getWordOfTheDay();
+    
+    // Fetch word data from Free Dictionary API
+    const response = await axios.get(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`,
+      { timeout: 5000 }
+    );
+
+    if (response.data && response.data.length > 0) {
+      const wordData = response.data[0];
+      
+      // Extract phonetics with audio
+      const phonetic = wordData.phonetic || 
+        (wordData.phonetics && wordData.phonetics.length > 0 ? 
+          wordData.phonetics[0].text : '');
+      
+      const audioUrl = wordData.phonetics?.find((p) => p.audio)?.audio || null;
+
+      // Extract ALL examples from ALL meanings and definitions
+      const allExamples = [];
+      wordData.meanings.forEach((meaning) => {
+        meaning.definitions.forEach((def) => {
+          if (def.example) {
+            allExamples.push(def.example);
+          }
+        });
+      });
+
+      // Process meanings with ALL definitions
+      const meaningsPromises = wordData.meanings.slice(0, 3).map(async (meaning) => {
+        // Get first definition for AI sentence generation
+        const firstDef = meaning.definitions[0];
+        
+        // Generate additional example sentences using AI
+        const aiExamples = await generateExampleSentences(
+          wordData.word,
+          meaning.partOfSpeech,
+          firstDef.definition
+        );
+
+        // Get synonyms and antonyms from API or fallback
+        let synonyms = meaning.synonyms ? meaning.synonyms.slice(0, 5) : [];
+        let antonyms = meaning.antonyms ? meaning.antonyms.slice(0, 5) : [];
+        
+        // Use fallback if no synonyms/antonyms from API
+        if (synonyms.length === 0 && antonyms.length === 0) {
+          const fallback = SYNONYMS_ANTONYMS_FALLBACK[wordData.word.toLowerCase()];
+          if (fallback) {
+            synonyms = fallback.synonyms || [];
+            antonyms = fallback.antonyms || [];
+          }
+        }
+
+        return {
+          partOfSpeech: meaning.partOfSpeech,
+          definitions: meaning.definitions.slice(0, 2).map((def) => ({
+            definition: def.definition,
+            example: def.example || null,
+          })),
+          synonyms,
+          antonyms,
+          // Combine API examples and AI-generated examples
+          additionalExamples: [...allExamples, ...aiExamples].slice(0, 6),
+        };
+      });
+
+      const meanings = await Promise.all(meaningsPromises);
+
+      res.json({
+        success: true,
+        word: wordData.word,
+        phonetic,
+        audioUrl,
+        meanings,
+        sourceUrl: wordData.sourceUrls ? wordData.sourceUrls[0] : null,
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: 'Word not found',
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching word of the day:', error.message);
+    
+    // Return a fallback response if API fails
+    res.json({
+      success: true,
+      word: getWordOfTheDay(),
+      phonetic: '',
+      audioUrl: null,
+      meanings: [{
+        partOfSpeech: 'adjective',
+        definitions: [{
+          definition: 'Check back tomorrow for a new word!',
+          example: null,
+        }],
+        synonyms: [],
+        antonyms: [],
+        additionalExamples: [],
+      }],
+      sourceUrl: null,
+    });
   }
 });
 

@@ -13,3 +13,4 @@ CREATE DATABASE kidchatbox;
 -- Note: Tables will be created automatically by the server
 -- But if you want to create them manually, see server/config/database.js
 
+

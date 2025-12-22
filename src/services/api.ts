@@ -613,5 +613,41 @@ export const publicApi = {
       return { success: false, totalViews: 0 };
     }
   },
+
+  /**
+   * Get Word of the Day with definition, examples, and phonetics
+   */
+  getWordOfTheDay: async (): Promise<{
+    success: boolean;
+    word: string;
+    phonetic: string;
+    audioUrl: string | null;
+    meanings: Array<{
+      partOfSpeech: string;
+      definitions: Array<{
+        definition: string;
+        example: string | null;
+      }>;
+      synonyms: string[];
+      antonyms: string[];
+      additionalExamples: string[];
+    }>;
+    sourceUrl: string | null;
+  }> => {
+    try {
+      const response = await apiClient.get('/public/word-of-the-day');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get word of the day:', error);
+      return {
+        success: false,
+        word: 'Error',
+        phonetic: '',
+        audioUrl: null,
+        meanings: [],
+        sourceUrl: null,
+      };
+    }
+  },
 };
 

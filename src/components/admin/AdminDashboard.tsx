@@ -24,7 +24,8 @@ import { motion } from 'framer-motion';
 import { adminApi, AnalyticsSummary } from '@/services/admin';
 import { PullToRefresh } from '../PullToRefresh';
 
-const MotionCard = motion(Card);
+// Use motion.div wrapper instead of motion(Card) to avoid TypeScript complexity issues
+const MotionCardWrapper = motion.div;
 
 /**
  * Admin Dashboard component
@@ -139,55 +140,61 @@ export const AdminDashboard: React.FC = () => {
 
         <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={{ base: 3, md: 4 }}>
           {stats.map((stat, index) => (
-            <MotionCard
+            <MotionCardWrapper
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: 1.05 }}
-              cursor="pointer"
-              onClick={() => handleCardClick(stat.route)}
-              _hover={{ shadow: 'lg' }}
             >
-              <CardBody p={{ base: 4, md: 6 }}>
-                <HStack justify="space-between" align="center">
-                  <VStack align="start" spacing={1}>
-                    <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
-                      {stat.label}
-                    </Text>
-                    <Text fontSize={{ base: 'xl', md: '2xl' }} fontWeight="bold" color={`${stat.color}.600`}>
-                      {stat.value}
-                    </Text>
-                  </VStack>
-                  <Text fontSize={{ base: '2xl', md: '3xl' }}>{stat.icon}</Text>
-                </HStack>
-              </CardBody>
-            </MotionCard>
+              <Card
+                cursor="pointer"
+                onClick={() => handleCardClick(stat.route)}
+                _hover={{ shadow: 'lg' }}
+              >
+                <CardBody p={{ base: 4, md: 6 }}>
+                  <HStack justify="space-between" align="center">
+                    <VStack align="start" spacing={1}>
+                      <Text fontSize={{ base: 'xs', md: 'sm' }} color="gray.600">
+                        {stat.label}
+                      </Text>
+                      <Text fontSize={{ base: 'xl', md: '2xl' }} fontWeight="bold" color={`${stat.color}.600`}>
+                        {stat.value}
+                      </Text>
+                    </VStack>
+                    <Text fontSize={{ base: '2xl', md: '3xl' }}>{stat.icon}</Text>
+                  </HStack>
+                </CardBody>
+              </Card>
+            </MotionCardWrapper>
           ))}
         </SimpleGrid>
 
         {summary && summary.pendingUsers > 0 && (
-          <MotionCard
+          <MotionCardWrapper
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
-            cursor="pointer"
-            onClick={() => handleCardClick('/admin/users?status=pending')}
-            _hover={{ shadow: 'lg' }}
           >
-            <CardHeader>
-              <HStack>
-                <Text fontWeight="bold">Action Required</Text>
-                <Badge colorScheme="orange">{summary.pendingUsers}</Badge>
-              </HStack>
-            </CardHeader>
-            <CardBody>
-              <Text>
-                You have {summary.pendingUsers} user{summary.pendingUsers > 1 ? 's' : ''} waiting
-                for approval. Review them in the User Management section.
-              </Text>
-            </CardBody>
-          </MotionCard>
+            <Card
+              cursor="pointer"
+              onClick={() => handleCardClick('/admin/users?status=pending')}
+              _hover={{ shadow: 'lg' }}
+            >
+              <CardHeader>
+                <HStack>
+                  <Text fontWeight="bold">Action Required</Text>
+                  <Badge colorScheme="orange">{summary.pendingUsers}</Badge>
+                </HStack>
+              </CardHeader>
+              <CardBody>
+                <Text>
+                  You have {summary.pendingUsers} user{summary.pendingUsers > 1 ? 's' : ''} waiting
+                  for approval. Review them in the User Management section.
+                </Text>
+              </CardBody>
+            </Card>
+          </MotionCardWrapper>
         )}
       </VStack>
     </Box>

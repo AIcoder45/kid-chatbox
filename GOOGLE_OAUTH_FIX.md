@@ -104,3 +104,4 @@ The application works perfectly with email/password login. You can:
 4. Try a different browser
 5. Check if any browser extensions are blocking OAuth
 
+

@@ -130,3 +130,4 @@ curl -X POST http://localhost:3000/api/auth/register \
   -d '{"email":"test@example.com","password":"password123","name":"Test User"}'
 ```
 
+

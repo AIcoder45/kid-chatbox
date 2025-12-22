@@ -213,3 +213,4 @@ router.delete('/:id', checkPermission('manage_study_material'), async (req, res,
 
 module.exports = router;
 
+

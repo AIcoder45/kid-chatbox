@@ -515,6 +515,9 @@ export const adminApi = {
     timeLimit?: number;
     topics?: string[];
     language?: string;
+    gradeLevel?: string;
+    sampleQuestion?: string;
+    examStyle?: string;
   }): Promise<{ quiz: Quiz; questions: QuizQuestion[]; message: string }> => {
     const response = await apiClient.post('/quizzes/generate', data);
     return response.data;

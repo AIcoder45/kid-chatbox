@@ -181,3 +181,4 @@ The app works perfectly without Google OAuth:
 - Scopes: `email`, `profile`, `openid`
 - Test users: Add your email (if in Testing mode)
 
+

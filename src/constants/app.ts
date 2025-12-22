@@ -49,5 +49,14 @@ export const MESSAGES = {
   VIEW_QUIZ_DETAILS: 'View Details',
   BACK_TO_DASHBOARD: 'Back to Dashboard',
   NO_QUIZZES_YET: 'You haven\'t completed any quizzes yet.',
+  // Word of the Day
+  WORD_OF_THE_DAY_TITLE: '📖 Word of the Day',
+  WORD_OF_THE_DAY_LOADING: 'Loading word...',
+  WORD_OF_THE_DAY_ERROR: 'Unable to load word',
+  WORD_OF_THE_DAY_DEFINITION: 'Definition',
+  WORD_OF_THE_DAY_EXAMPLE: 'Example',
+  WORD_OF_THE_DAY_SYNONYMS: 'Synonyms',
+  WORD_OF_THE_DAY_ANTONYMS: 'Antonyms',
+  WORD_OF_THE_DAY_NO_EXAMPLE: 'No example available',
 } as const;
 

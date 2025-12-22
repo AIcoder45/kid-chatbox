@@ -71,6 +71,9 @@ export const createQuizHandlers = (deps: HandlersDependencies) => {
     timeLimit: string;
     topics: string[];
     language: string;
+    gradeLevel?: string;
+    sampleQuestion?: string;
+    examStyle?: string;
   }) => {
     if (!data.name || !data.ageGroup || !data.difficulty) {
       toast({
@@ -118,6 +121,9 @@ export const createQuizHandlers = (deps: HandlersDependencies) => {
         timeLimit: data.timeLimit ? parseInt(data.timeLimit) : undefined,
         topics: data.topics,
         language: data.language,
+        gradeLevel: data.gradeLevel?.trim() || undefined,
+        sampleQuestion: data.sampleQuestion?.trim() || undefined,
+        examStyle: data.examStyle?.trim() || undefined,
       });
 
       toast({

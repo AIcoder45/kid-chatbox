@@ -151,3 +151,4 @@ For production, use:
 | `VITE_GOOGLE_CLIENT_ID` | Public | https://console.cloud.google.com/ |
 | `VITE_API_BASE_URL` | Public | Your API endpoint URL |
 
+

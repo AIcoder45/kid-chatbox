@@ -113,38 +113,259 @@ async function generateQuizQuestions(config) {
   const currentTimestamp = new Date().toISOString();
   const timestampContext = `Generation Date/Time: ${currentTimestamp}\n\nUse current date context when generating questions, especially for subjects like Current Affairs or recent events.\n`;
 
-  const prompt = `Generate ${numberOfQuestions} educational quiz questions for children aged ${ageGroup} years.
+  // Build comprehensive mandatory instructions section
+  const mandatoryInstructions = `
+MANDATORY INSTRUCTIONS - MUST FOLLOW STRICTLY:
 
-Topics: ${topicsText}${descriptionContext}
-Difficulty: ${difficultyLevel}
-Language: ${languageInstruction}
-Question Style: ${questionLength}
-${gradeLevelContext}${examStyleContext}${timestampContext}
-${sampleQuestionContext}
-Requirements:
-- Each question must have exactly 4 options (A, B, C, D)
-- Questions should be age-appropriate and educational
-- Include clear explanations for each answer
-- Make questions engaging and relevant to the topics${description ? ' and aligned with the quiz description/context provided above' : ''}
+1. QUESTION STRUCTURE REQUIREMENTS:
+   - Each question MUST have exactly 4 options labeled A, B, C, D
+   - Options must be distinct and plausible
+   - Only ONE option should be correct
+   - Questions must be clear, unambiguous, and grammatically correct
+   - Question numbering must start from 1 and increment sequentially
 
-Return ONLY a valid JSON array with this exact structure:
+2. AGE-APPROPRIATENESS REQUIREMENTS:
+   - Language complexity MUST match age group ${ageGroup} years
+   - Concepts MUST be appropriate for the developmental stage
+   - Avoid age-inappropriate content or overly complex terminology
+   - Use vocabulary and sentence structures suitable for ${ageGroup} years old
+
+3. DIFFICULTY LEVEL REQUIREMENTS:
+   - Difficulty: ${difficultyLevel}
+   - Question Style: ${questionLength}
+   ${difficulty === 'Mix' ? '- Distribute difficulty evenly: mix easy, medium, and challenging questions' : ''}
+   ${difficulty === 'Basic' ? '- Keep questions straightforward with clear, direct answers' : ''}
+   ${difficulty === 'Advanced' ? '- Include context, scenarios, and require some reasoning' : ''}
+   ${difficulty === 'Expert' ? '- Require deeper understanding, analysis, and critical thinking' : ''}
+
+4. LANGUAGE REQUIREMENTS:
+   ${languageInstruction}
+   - Maintain consistency in language throughout all questions
+   - Ensure proper grammar and spelling
+   - Use appropriate script (Devanagari for Hindi, Roman for English/Hinglish)
+
+5. EDUCATIONAL VALUE REQUIREMENTS:
+   - Questions MUST be educational and promote learning
+   - Each question should test understanding, not just memorization
+   - Include real-world relevance where applicable
+   - Questions should encourage critical thinking appropriate for the age group
+
+6. EXPLANATION REQUIREMENTS (CRITICAL - MANDATORY):
+   - Each explanation MUST be DETAILED and COMPREHENSIVE (minimum 5-7 sentences, preferably more)
+   - EXPLAIN THE CORRECT ANSWER IN DETAIL:
+     * Clearly state why the correct answer is right
+     * Provide the reasoning or logic behind the correct answer
+     * Explain the concept or principle being tested
+     * Give step-by-step explanation if applicable
+     * Include relevant facts, definitions, or rules that support the answer
+   - EXPLAIN EACH INCORRECT OPTION IN DETAIL:
+     * For EACH wrong option (A, B, C, D if not correct), explain WHY it is wrong
+     * Identify the misconception or error in each incorrect option
+     * Explain what makes each distractor incorrect
+     * Clarify common mistakes that might lead to choosing that option
+   - PROVIDE ADDITIONAL EDUCATIONAL CONTENT:
+     * Include related concepts or background information
+     * Provide real-world examples or applications
+     * Connect to broader topics or related subjects
+     * Offer learning tips or study strategies
+     * Suggest ways to remember or understand the concept better
+   - USE APPROPRIATE LANGUAGE:
+     * Use age-appropriate language for ${ageGroup} years old
+     * Use encouraging and positive tone throughout
+     * Make explanations clear and easy to understand
+     * Avoid overly technical jargon unless age-appropriate
+   - MAKE EXPLANATIONS EDUCATIONAL:
+     * Each explanation should teach something valuable
+     * Help students understand not just the answer, but the concept
+     * Provide context that enhances learning
+     * Make explanations memorable and engaging
+   - STRUCTURE REQUIREMENTS:
+     * Start with confirming the correct answer
+     * Explain why it's correct with detailed reasoning
+     * Address each incorrect option systematically
+     * End with additional learning insights or tips
+   - MINIMUM LENGTH: Each explanation must be substantial (5-7 sentences minimum, but more is better)
+   - QUALITY STANDARD: Explanations should be so detailed that a student reading them gains a complete understanding of the concept
+
+7. TOPIC COVERAGE REQUIREMENTS:
+   - Topics to cover: ${topicsText}
+   ${topics.length > 1 ? '- Distribute questions evenly across all topics' : '- Focus all questions on the specified topic'}
+   - Ensure comprehensive coverage of the topic(s)
+   - Cover different aspects, subtopics, and concepts within the topic(s)
+   - Vary question types and approaches
+
+8. UNIQUENESS AND VARIETY REQUIREMENTS (CRITICAL):
+   - NO REPEATED QUESTIONS: Each question MUST be completely unique
+   - NO DUPLICATE CONTENT: Do not repeat the same question in different wording
+   - NO SIMILAR QUESTIONS: Avoid questions that test the exact same concept or fact
+   - VARIETY IN QUESTION TYPES: Mix different question formats (direct, scenario-based, application-based, analysis-based)
+   - VARIETY IN CONCEPTS: Cover different aspects, subtopics, and angles of the topic(s)
+   - VARIETY IN DIFFICULTY: ${difficulty === 'Mix' ? 'Distribute easy, medium, and challenging questions evenly' : 'Maintain consistent difficulty level'}
+   - VARIETY IN QUESTION STRUCTURE: Use different sentence structures and phrasings
+   - VARIETY IN CONTEXT: Include different scenarios, examples, and real-world applications
+   - Each question should test a DIFFERENT aspect or understanding of the topic
+   - Ensure questions complement each other without overlap
+   - Review all questions before finalizing to ensure no repetition or similarity
+
+9. CONTEXT AND ALIGNMENT REQUIREMENTS:
+   ${descriptionContext}
+   ${gradeLevelContext}
+   ${examStyleContext}
+   ${sampleQuestionContext}
+   ${timestampContext}
+
+10. ENGAGEMENT REQUIREMENTS:
+    - Make questions interesting and engaging
+    - Use scenarios, examples, or relatable contexts where appropriate
+    - Avoid dry or boring question formats
+    - Encourage curiosity and learning
+    - Use age-appropriate examples and references
+    - Make questions relatable to children's experiences
+
+11. CONTENT QUALITY REQUIREMENTS:
+    - Ensure factual accuracy: All information MUST be correct and up-to-date
+    - Use current information, especially for subjects like Current Affairs
+    - Verify all dates, names, facts, and figures are accurate
+    - Avoid outdated or incorrect information
+    - Cross-check concepts against standard educational curricula
+
+12. QUESTION CLARITY REQUIREMENTS:
+    - Questions must be clear and unambiguous
+    - Avoid double negatives or confusing phrasing
+    - Use simple, direct language appropriate for age ${ageGroup}
+    - Ensure questions can be understood without additional context
+    - Avoid trick questions or overly clever wording
+    - Make the intent of each question obvious
+
+13. OPTION QUALITY REQUIREMENTS:
+    - All 4 options must be grammatically correct and well-formed
+    - Distractors must be plausible but clearly incorrect
+    - Avoid obviously wrong options that don't make sense
+    - Ensure options are similar in length and complexity
+    - Avoid giving away the answer through option structure
+    - Make sure correct answer is not always option A (vary positions)
+
+14. EXPLANATION QUALITY REQUIREMENTS (ENHANCED):
+    - Explanations MUST be comprehensive, detailed, and thorough
+    - MINIMUM LENGTH: 5-7 sentences per explanation (more is preferred)
+    - STRUCTURE: Each explanation must include:
+      * Clear statement of the correct answer
+      * Detailed reasoning for why the correct answer is right
+      * Explanation of why EACH incorrect option is wrong (all 3 distractors)
+      * Additional context, examples, or related information
+      * Learning tips or memory aids
+    - CONTENT DEPTH:
+      * Explain the underlying concept or principle
+      * Provide step-by-step reasoning where applicable
+      * Include relevant facts, definitions, or rules
+      * Address common misconceptions
+      * Connect to real-world applications or examples
+    - EDUCATIONAL VALUE:
+      * Each explanation should be a mini-lesson
+      * Help students understand the concept deeply, not just memorize
+      * Provide insights that enhance overall understanding
+      * Include connections to related topics or broader concepts
+    - LANGUAGE QUALITY:
+      * Use age-appropriate language for ${ageGroup} years old
+      * Use clear, simple sentences that are easy to follow
+      * Include examples or analogies that aid understanding
+      * Use positive, encouraging, and supportive tone
+      * Avoid jargon unless necessary and explained
+    - COMPLETENESS:
+      * Address ALL aspects: correct answer + all 3 incorrect options
+      * Leave no option unexplained
+      * Ensure comprehensive coverage of the concept
+      * Provide enough detail that students can learn from the explanation alone
+
+15. FINAL QUALITY ASSURANCE REQUIREMENTS:
+    - Review ALL questions for uniqueness - NO REPEATS
+    - Verify no two questions test the same concept identically
+    - Check that questions cover diverse aspects of the topic(s)
+    - Ensure all questions meet age-appropriateness standards
+    - Validate factual accuracy of all content
+    - Confirm all explanations are DETAILED, comprehensive, and educational (5-7 sentences minimum)
+    - Verify each explanation addresses the correct answer AND all incorrect options
+    - Ensure explanations provide deep understanding, not just surface-level information
+    - Verify questions align with difficulty level specified
+    - Check that language requirements are met throughout
+    - Ensure proper formatting and structure
+    - Validate that exactly ${numberOfQuestions} unique questions are generated
+
+CRITICAL REMINDERS:
+- NO REPEATED QUESTIONS - Each question must be completely unique
+- NO SIMILAR QUESTIONS - Avoid testing the same concept multiple times
+- MAXIMUM VARIETY - Cover different aspects, use different formats, vary approaches
+- DETAILED EXPLANATIONS REQUIRED - Each explanation must be comprehensive (5-7 sentences minimum) addressing correct answer AND all incorrect options
+- QUALITY OVER QUANTITY - Better to have fewer high-quality unique questions than repeated ones
+- Follow ALL the above requirements. Do not skip any mandatory instruction.`;
+
+  const prompt = `You are an expert educational content creator specializing in creating high-quality quiz questions for children.
+
+TASK: Generate exactly ${numberOfQuestions} educational quiz questions for children aged ${ageGroup} years.
+
+${mandatoryInstructions}
+
+TOPIC DETAILS:
+- Topics: ${topicsText}
+${descriptionContext ? `- Quiz Context: ${descriptionContext.replace('Quiz Context/Description: ', '').replace('\nUse this description to understand the quiz\'s purpose and generate questions that align with this context.', '')}` : ''}
+
+CONFIGURATION DETAILS:
+- Age Group: ${ageGroup} years
+- Difficulty Level: ${difficulty} (${difficultyLevel})
+- Question Style: ${questionLength}
+- Language: ${language}
+${gradeLevel ? `- Grade/Class Level: ${gradeLevel}` : ''}
+${examStyle ? `- Exam Style: ${examStyle}` : ''}
+${sampleQuestion ? `- Sample Question Pattern:\n${sampleQuestion}\n\nUse this as a reference for style and format.` : ''}
+
+OUTPUT FORMAT REQUIREMENTS:
+Return ONLY a valid JSON array with this EXACT structure (no markdown, no additional text):
 [
   {
     "number": 1,
-    "question": "Question text here",
+    "question": "Question text here (age-appropriate, clear, engaging)",
     "options": {
-      "A": "Option A text",
-      "B": "Option B text",
-      "C": "Option C text",
-      "D": "Option D text"
+      "A": "Option A text (plausible distractor)",
+      "B": "Option B text (plausible distractor)",
+      "C": "Option C text (plausible distractor)",
+      "D": "Option D text (plausible distractor)"
     },
     "correctAnswer": "A",
-    "explanation": "Detailed explanation (3-5 sentences) that clearly explains why this answer is correct, why other options are wrong, provides additional context, and helps the student understand the concept better."
+    "explanation": "DETAILED and COMPREHENSIVE explanation (minimum 5-7 sentences, more is better) that MUST include: 1) Clear statement of the correct answer, 2) Detailed reasoning explaining WHY the correct answer is right (with concepts, facts, or principles), 3) Explanation of WHY EACH incorrect option (A, B, C, D if not correct) is wrong - address all 3 distractors, 4) Additional context, examples, or real-world applications, 5) Learning tips, memory aids, or study strategies, 6) Connections to related concepts or broader topics, 7) Encouraging and positive language appropriate for age ${ageGroup} years. The explanation should be so detailed that a student can learn the concept deeply from reading it alone."
   },
-  ...
+  {
+    "number": 2,
+    ...
+  }
 ]
 
-Return exactly ${numberOfQuestions} questions.`;
+CRITICAL OUTPUT REQUIREMENTS:
+- Return EXACTLY ${numberOfQuestions} questions (no more, no less)
+- Return ONLY valid JSON (no markdown code blocks, no explanatory text)
+- Ensure all questions follow ALL mandatory instructions above
+- Validate that each question has exactly 4 options (A, B, C, D)
+- CRITICAL: Verify explanations are DETAILED and COMPREHENSIVE (minimum 5-7 sentences, more preferred)
+- CRITICAL: Verify each explanation addresses the correct answer AND explains why ALL incorrect options are wrong
+- CRITICAL: Ensure explanations provide deep understanding with examples, context, and learning tips
+- Confirm questions are age-appropriate and educational
+- CRITICAL: Ensure NO REPEATED QUESTIONS - each question must be completely unique
+- CRITICAL: Ensure NO SIMILAR QUESTIONS - avoid testing the same concept multiple times
+- CRITICAL: Ensure MAXIMUM VARIETY - different aspects, formats, and approaches
+- Review all questions before finalizing to eliminate any repetition or similarity
+
+FINAL CHECKLIST BEFORE GENERATING:
+✓ All questions are unique (no repeats)
+✓ Questions cover different aspects of the topic(s)
+✓ Questions use varied formats and approaches
+✓ All questions are age-appropriate
+✓ All questions are factually accurate
+✓ CRITICAL: All explanations are DETAILED (5-7 sentences minimum, more preferred)
+✓ CRITICAL: Each explanation addresses the correct answer AND all incorrect options
+✓ CRITICAL: Explanations include examples, context, learning tips, and deep understanding
+✓ All explanations are educational and comprehensive
+✓ All requirements from mandatory instructions are met
+
+Generate the questions now, following ALL requirements strictly. Ensure maximum variety and NO REPEATED QUESTIONS.`;
 
   try {
     const completion = await openai.chat.completions.create({

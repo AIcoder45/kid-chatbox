@@ -116,3 +116,4 @@ If you see errors about missing environment variables, check your `.env` file.
 - Verify `VITE_OPENAI_API_KEY` starts with `sk-`
 - Check API key is valid at https://platform.openai.com/api-keys
 
+
